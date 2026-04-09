@@ -4,8 +4,12 @@
 
 // Status types
 export type Status = 'active' | 'inactive' | 'pending';
+export type PatientStatus = 'active' | 'inactive' | 'hospitalized' | 'jailed' | 'loa' | 'pending';
+export type StaffStatus = 'active' | 'inactive';
 export type UserRole = 'admin' | 'staff';
 export type Gender = 'male' | 'female' | 'other';
+export type MaritalStatus = 'single' | 'married' | 'divorced' | 'widowed' | 'separated';
+export type FacilityType = 'hospital' | 'clinic' | 'care_center' | 'nursing_home' | 'rehabilitation';
 
 // Base entity interface
 export interface BaseEntity {
@@ -16,22 +20,63 @@ export interface BaseEntity {
 
 // Structure type
 export interface Structure extends BaseEntity {
-  name: string;
-  description: string;
-  regionCode: string;
-  status: Status;
+  title: string;
+  code: string;
+  type: FacilityType;
+  license: string;
+  licenseExpiry: string;
+  
+  // Address fields
+  address: string;
+  address2?: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  county: string;
+  country: string;
+  
+  // Contact fields
+  phone: string;
+  phoneExtension?: string;
+  fax?: string;
+  email: string;
+  website?: string;
+  
+  // Additional
+  timezone: string;
   notes: string;
+  status: Status;
   branchCount: number;
 }
 
 // Branch type
 export interface Branch extends BaseEntity {
   structureId: string;
-  name: string;
+  title: string;
+  code: string;
+  type: FacilityType;
+  license: string;
+  licenseExpiry: string;
+  
+  // Address fields
   address: string;
+  address2?: string;
   city: string;
-  contactNumber: string;
+  state: string;
+  zipCode: string;
+  county: string;
+  country: string;
+  
+  // Contact fields
+  phone: string;
+  phoneExtension?: string;
+  fax?: string;
   email: string;
+  website?: string;
+  
+  // Additional
+  timezone: string;
+  notes?: string;
   status: Status;
   patientCount: number;
   userCount: number;
@@ -39,26 +84,52 @@ export interface Branch extends BaseEntity {
 
 // Patient type
 export interface Patient extends BaseEntity {
-  branchId: string;
-  fullName: string;
+  // Name split into parts
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  
+  // Personal info
+  email: string;
+  maritalStatus: MaritalStatus;
+  admissionDate: string;
   age: number;
   gender: Gender;
   contactNumber: string;
-  address: string;
   medicalNotes: string;
-  status: Status;
+  status: PatientStatus;
+  
+  // Multi-branch support
+  mainBranchId: string;
+  branchIds: string[];
+  assignedStaffIds: string[];
 }
 
 // User type
 export interface User extends BaseEntity {
-  branchId: string;
-  fullName: string;
+  // Name split into parts
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  
+  // Personal info
+  maritalStatus: MaritalStatus;
+  admissionDate: string;
+  age: number;
+  gender: Gender;
+  contactNumber: string;
+  
+  // Account info
   email: string;
-  phone: string;
+  password?: string;
   role: UserRole;
-  status: Status;
+  status: StaffStatus;
   notes: string;
   avatar?: string;
+  
+  // Branch association
+  branchId: string;
+  assignedPatientIds: string[];
 }
 
 // Agency type
@@ -92,7 +163,7 @@ export interface SidebarMenuItem {
 export interface FormField {
   name: string;
   label: string;
-  type: 'text' | 'email' | 'tel' | 'number' | 'textarea' | 'select' | 'radio';
+  type: 'text' | 'email' | 'tel' | 'number' | 'textarea' | 'select' | 'radio' | 'date' | 'password';
   placeholder?: string;
   required?: boolean;
   options?: { value: string; label: string }[];
@@ -131,4 +202,16 @@ export interface PaginationState {
   page: number;
   pageSize: number;
   total: number;
+}
+
+// Filter state
+export interface FilterState {
+  search: string;
+  status?: string;
+  type?: string;
+  branchId?: string;
+  structureId?: string;
+  role?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }

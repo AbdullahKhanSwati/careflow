@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { FormInput, FormTextarea, FormSelect } from '@/components/ui/form-input';
-import { STATUS_OPTIONS, GENDER_OPTIONS } from '@/lib/constants';
-import type { Patient } from '@/types';
+import { PATIENT_STATUS_OPTIONS, GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from '@/lib/constants';
+import type { Patient, PatientStatus, Gender, MaritalStatus } from '@/types';
 
 interface PatientFormProps {
   initialData?: Partial<Patient>;
-  onSubmit: (data: Omit<Patient, 'id' | 'createdAt' | 'updatedAt' | 'branchId'>) => void;
+  onSubmit: (data: Omit<Patient, 'id' | 'createdAt' | 'updatedAt' | 'mainBranchId' | 'branchIds' | 'assignedStaffIds'>) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -20,11 +20,15 @@ export function PatientForm({
   isLoading = false,
 }: PatientFormProps) {
   const [formData, setFormData] = useState({
-    fullName: initialData?.fullName || '',
+    firstName: initialData?.firstName || '',
+    middleName: initialData?.middleName || '',
+    lastName: initialData?.lastName || '',
+    email: initialData?.email || '',
     age: initialData?.age?.toString() || '',
     gender: initialData?.gender || 'male',
+    maritalStatus: initialData?.maritalStatus || 'single',
     contactNumber: initialData?.contactNumber || '',
-    address: initialData?.address || '',
+    admissionDate: initialData?.admissionDate || new Date().toISOString().split('T')[0],
     medicalNotes: initialData?.medicalNotes || '',
     status: initialData?.status || 'active',
   });
@@ -34,8 +38,16 @@ export function PatientForm({
   const validate = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    }
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    }
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
     }
     if (!formData.age || isNaN(parseInt(formData.age)) || parseInt(formData.age) < 0) {
       newErrors.age = 'Please enter a valid age';
@@ -43,8 +55,8 @@ export function PatientForm({
     if (!formData.contactNumber.trim()) {
       newErrors.contactNumber = 'Contact number is required';
     }
-    if (!formData.address.trim()) {
-      newErrors.address = 'Address is required';
+    if (!formData.admissionDate) {
+      newErrors.admissionDate = 'Admission date is required';
     }
 
     setErrors(newErrors);
@@ -55,29 +67,76 @@ export function PatientForm({
     e.preventDefault();
     if (validate()) {
       onSubmit({
-        fullName: formData.fullName,
+        firstName: formData.firstName,
+        middleName: formData.middleName || undefined,
+        lastName: formData.lastName,
+        email: formData.email,
         age: parseInt(formData.age),
-        gender: formData.gender as 'male' | 'female' | 'other',
+        gender: formData.gender as Gender,
+        maritalStatus: formData.maritalStatus as MaritalStatus,
         contactNumber: formData.contactNumber,
-        address: formData.address,
+        admissionDate: formData.admissionDate,
         medicalNotes: formData.medicalNotes,
-        status: formData.status as 'active' | 'inactive' | 'pending',
+        status: formData.status as PatientStatus,
       });
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <FormInput
-        label="Full Name"
-        placeholder="e.g., John Anderson"
-        value={formData.fullName}
-        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-        error={errors.fullName}
-        required
-      />
+      {/* Name Section */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium text-muted-foreground">Personal Information</h3>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <FormInput
+            label="First Name"
+            placeholder="e.g., John"
+            value={formData.firstName}
+            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+            error={errors.firstName}
+            required
+          />
+          <FormInput
+            label="Middle Name"
+            placeholder="e.g., Michael"
+            value={formData.middleName}
+            onChange={(e) => setFormData({ ...formData, middleName: e.target.value })}
+          />
+          <FormInput
+            label="Last Name"
+            placeholder="e.g., Anderson"
+            value={formData.lastName}
+            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+            error={errors.lastName}
+            required
+          />
+        </div>
+      </div>
 
-      <div className="grid gap-5 sm:grid-cols-3">
+      {/* Contact Section */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormInput
+          label="Email"
+          type="email"
+          placeholder="e.g., john.anderson@email.com"
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          error={errors.email}
+          required
+        />
+        <FormInput
+          label="Contact Number"
+          type="tel"
+          placeholder="e.g., +1 (310) 555-1001"
+          value={formData.contactNumber}
+          onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
+          error={errors.contactNumber}
+          required
+        />
+      </div>
+
+      {/* Demographics Section */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <FormInput
           label="Age"
           type="number"
@@ -95,38 +154,38 @@ export function PatientForm({
           required
         />
         <FormSelect
+          label="Marital Status"
+          value={formData.maritalStatus}
+          onChange={(e) => setFormData({ ...formData, maritalStatus: e.target.value })}
+          options={MARITAL_STATUS_OPTIONS}
+          required
+        />
+        <FormSelect
           label="Status"
           value={formData.status}
           onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-          options={STATUS_OPTIONS}
+          options={PATIENT_STATUS_OPTIONS}
           required
         />
       </div>
 
+      {/* Admission Date */}
       <FormInput
-        label="Contact Number"
-        type="tel"
-        placeholder="e.g., +1 (310) 555-1001"
-        value={formData.contactNumber}
-        onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
-        error={errors.contactNumber}
+        label="Admission Date"
+        type="date"
+        value={formData.admissionDate}
+        onChange={(e) => setFormData({ ...formData, admissionDate: e.target.value })}
+        error={errors.admissionDate}
         required
       />
 
-      <FormInput
-        label="Address"
-        placeholder="e.g., 123 Main St, Los Angeles, CA 90001"
-        value={formData.address}
-        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-        error={errors.address}
-        required
-      />
-
+      {/* Notes Section */}
       <FormTextarea
         label="Medical Notes"
         placeholder="Enter any relevant medical information..."
         value={formData.medicalNotes}
         onChange={(e) => setFormData({ ...formData, medicalNotes: e.target.value })}
+        rows={4}
       />
 
       <div className="flex justify-end gap-3 pt-4">
@@ -134,7 +193,7 @@ export function PatientForm({
           Cancel
         </Button>
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? 'Saving...' : initialData ? 'Update Patient' : 'Add Patient'}
+          {isLoading ? 'Saving...' : initialData?.firstName ? 'Update Patient' : 'Add Patient'}
         </Button>
       </div>
     </form>
