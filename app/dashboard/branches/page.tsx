@@ -25,7 +25,7 @@ import type { Branch, TableColumn, FilterState } from '@/types';
 
 const branchColumns: TableColumn<Branch>[] = [
   {
-    key: 'name',
+    key: 'title',
     header: 'Branch',
     sortable: true,
     render: (_, row) => (
@@ -34,8 +34,8 @@ const branchColumns: TableColumn<Branch>[] = [
           <GitBranch className="h-5 w-5 text-accent" />
         </div>
         <div className="min-w-0">
-          <p className="font-medium text-foreground truncate">{row.name}</p>
-          <p className="text-sm text-muted-foreground">{row.city}</p>
+          <p className="font-medium text-foreground truncate">{row.title}</p>
+          <p className="text-sm text-muted-foreground">{row.code}</p>
         </div>
       </div>
     ),
@@ -48,7 +48,7 @@ const branchColumns: TableColumn<Branch>[] = [
       const structure = mockStructures.find((s) => s.id === value);
       return (
         <span className="text-sm text-muted-foreground">
-          {structure?.name || 'Unknown'}
+          {structure?.title || 'Unknown'}
         </span>
       );
     },
@@ -73,6 +73,16 @@ const branchColumns: TableColumn<Branch>[] = [
         <UserCog className="h-4 w-4 text-muted-foreground" />
         <span className="font-medium">{String(value)}</span>
       </div>
+    ),
+  },
+  {
+    key: 'notes',
+    header: 'Description',
+    sortable: false,
+    render: (value) => (
+      <p className="text-sm text-muted-foreground truncate max-w-xs">
+        {String(value || '-')}
+      </p>
     ),
   },
   {
@@ -236,6 +246,7 @@ export default function BranchesPage() {
                   <StatusBadge status={branch.status} />
                 </div>
                 <h3 className="font-semibold text-foreground mb-1 truncate">{branch.title}</h3>
+                <p className="text-xs text-muted-foreground mb-2 truncate">{branch.notes || '-'}</p>
                 <p className="text-sm text-muted-foreground mb-4">
                   {structure?.title || 'Unknown Structure'}
                 </p>

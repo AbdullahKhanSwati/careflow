@@ -6,7 +6,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 
 export const structuresColumns: TableColumn<Structure>[] = [
   {
-    key: 'name',
+    key: 'title',
     header: 'Structure',
     sortable: true,
     render: (_, row) => (
@@ -15,19 +15,19 @@ export const structuresColumns: TableColumn<Structure>[] = [
           <Building2 className="h-5 w-5 text-primary" />
         </div>
         <div className="min-w-0">
-          <p className="font-medium text-foreground truncate">{row.name}</p>
-          <p className="text-sm text-muted-foreground">{row.regionCode}</p>
+          <p className="font-medium text-foreground truncate">{row.title}</p>
+          <p className="text-sm text-muted-foreground">{row.code}</p>
         </div>
       </div>
     ),
   },
   {
-    key: 'description',
+    key: 'notes',
     header: 'Description',
     sortable: false,
     render: (value) => (
       <p className="text-sm text-muted-foreground truncate max-w-xs">
-        {String(value)}
+        {String(value || '-')}
       </p>
     ),
   },

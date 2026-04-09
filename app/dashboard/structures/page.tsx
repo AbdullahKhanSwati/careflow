@@ -192,6 +192,7 @@ export default function StructuresPage() {
               <h3 className="font-semibold text-foreground mb-1 truncate">
                 {structure.title}
               </h3>
+              <p className="text-xs text-muted-foreground mb-2 truncate">{structure.notes}</p>
               <p className="text-sm text-muted-foreground mb-4">{structure.city}, {structure.state}</p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
