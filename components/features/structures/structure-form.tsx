@@ -45,60 +45,83 @@ export function StructureForm({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  // Real-time validation - run whenever form data changes
+  // Validate only touched fields
   useEffect(() => {
     const newErrors: Record<string, string> = {};
     
-    if (formData.title.trim() === '') {
+    if (touched.title && formData.title.trim() === '') {
       newErrors.title = 'Title is required';
     }
-    if (formData.code.trim() === '') {
+    if (touched.code && formData.code.trim() === '') {
       newErrors.code = 'Code is required';
     }
-    if (formData.license.trim() === '') {
+    if (touched.license && formData.license.trim() === '') {
       newErrors.license = 'License is required';
     }
-    if (!formData.licenseExpiry) {
+    if (touched.licenseExpiry && !formData.licenseExpiry) {
       newErrors.licenseExpiry = 'License expiry is required';
     }
-    if (formData.address.trim() === '') {
+    if (touched.address && formData.address.trim() === '') {
       newErrors.address = 'Address is required';
     }
-    if (!formData.country) {
+    if (touched.country && !formData.country) {
       newErrors.country = 'Country is required';
     }
-    if (!formData.state) {
+    if (touched.state && !formData.state) {
       newErrors.state = 'State is required';
     }
-    if (!formData.city) {
+    if (touched.city && !formData.city) {
       newErrors.city = 'City is required';
     }
-    if (formData.zipCode.trim() === '') {
+    if (touched.zipCode && formData.zipCode.trim() === '') {
       newErrors.zipCode = 'ZIP code is required';
     }
-    if (formData.phone.trim() === '') {
+    if (touched.phone && formData.phone.trim() === '') {
       newErrors.phone = 'Phone is required';
     }
-    if (formData.email.trim() === '') {
+    if (touched.email && formData.email.trim() === '') {
       newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    } else if (touched.email && !/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email';
     }
-    if (formData.county.trim() === '') {
+    if (touched.county && formData.county.trim() === '') {
       newErrors.county = 'County is required';
     }
 
     setErrors(newErrors);
-  }, [formData]);
+  }, [formData, touched]);
 
-  const validate = () => {
-    return Object.keys(errors).length === 0;
+  const handleFieldBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
+
+  const validateAllFields = () => {
+    const allFields = ['title', 'code', 'license', 'licenseExpiry', 'address', 'country', 'state', 'city', 'zipCode', 'phone', 'email'];
+    setTouched(allFields.reduce((acc, field) => ({ ...acc, [field]: true }), {}));
+    
+    const newErrors: Record<string, string> = {};
+    if (formData.title.trim() === '') newErrors.title = 'Title is required';
+    if (formData.code.trim() === '') newErrors.code = 'Code is required';
+    if (formData.license.trim() === '') newErrors.license = 'License is required';
+    if (!formData.licenseExpiry) newErrors.licenseExpiry = 'License expiry is required';
+    if (formData.address.trim() === '') newErrors.address = 'Address is required';
+    if (!formData.country) newErrors.country = 'Country is required';
+    if (!formData.state) newErrors.state = 'State is required';
+    if (!formData.city) newErrors.city = 'City is required';
+    if (formData.zipCode.trim() === '') newErrors.zipCode = 'ZIP code is required';
+    if (formData.phone.trim() === '') newErrors.phone = 'Phone is required';
+    if (formData.email.trim() === '') newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Please enter a valid email';
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) {
+    if (validateAllFields()) {
       onSubmit({
         title: formData.title,
         code: formData.code,
@@ -135,6 +158,7 @@ export function StructureForm({
             placeholder="e.g., California Health Center"
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            onBlur={() => handleFieldBlur('title')}
             error={errors.title}
             required
           />

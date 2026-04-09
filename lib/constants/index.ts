@@ -118,3 +118,27 @@ export const BREAKPOINTS = {
   xl: 1280,
   '2xl': 1536,
 };
+
+// Provider type options
+export const PROVIDER_TYPE_OPTIONS = [
+  { value: 'individual', label: 'Individual Provider' },
+  { value: 'organization', label: 'Organization' },
+];
+
+// Provider specialty options
+export const PROVIDER_SPECIALTY_OPTIONS = [
+  { value: 'general_practice', label: 'General Practice' },
+  { value: 'cardiology', label: 'Cardiology' },
+  { value: 'pediatrics', label: 'Pediatrics' },
+  { value: 'orthopedics', label: 'Orthopedics' },
+  { value: 'psychiatry', label: 'Psychiatry' },
+  { value: 'surgery', label: 'Surgery' },
+  { value: 'other', label: 'Other' },
+];
+
+// Provider status options
+export const PROVIDER_STATUS_OPTIONS = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'pending', label: 'Pending' },
+];

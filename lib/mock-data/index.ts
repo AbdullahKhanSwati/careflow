@@ -2,6 +2,7 @@ export * from './structures';
 export * from './branches';
 export * from './patients';
 export * from './users';
+export * from './providers';
 
 import type { StatCard } from '@/types';
 

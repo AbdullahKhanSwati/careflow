@@ -141,6 +141,46 @@ export interface Agency extends BaseEntity {
   logo?: string;
 }
 
+// Provider type (Doctor)
+export type ProviderType = 'individual' | 'organization';
+export type ProviderSpecialty = 'general_practice' | 'cardiology' | 'pediatrics' | 'orthopedics' | 'psychiatry' | 'surgery' | 'other';
+
+export interface Provider extends BaseEntity {
+  // Basic info
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  providerType: ProviderType;
+  
+  // Professional info
+  npiNumber: string;
+  specialty: ProviderSpecialty;
+  licenseNumber?: string;
+  licenseExpiry?: string;
+  
+  // Personal info
+  gender: Gender;
+  
+  // Contact fields
+  phone: string;
+  phoneExtension?: string;
+  fax?: string;
+  email: string;
+  
+  // Address fields
+  address: string;
+  address2?: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  
+  // Additional
+  primaryLocation: boolean;
+  status: Status;
+  notes?: string;
+}
+
 // Table column configuration
 export interface TableColumn<T> {
   key: keyof T | string;

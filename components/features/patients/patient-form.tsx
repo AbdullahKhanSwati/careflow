@@ -34,42 +34,60 @@ export function PatientForm({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  // Real-time validation
+  // Validate only touched fields
   useEffect(() => {
     const newErrors: Record<string, string> = {};
     
-    if (formData.firstName.trim() === '') {
+    if (touched.firstName && formData.firstName.trim() === '') {
       newErrors.firstName = 'First name is required';
     }
-    if (formData.lastName.trim() === '') {
+    if (touched.lastName && formData.lastName.trim() === '') {
       newErrors.lastName = 'Last name is required';
     }
-    if (formData.email.trim() === '') {
+    if (touched.email && formData.email.trim() === '') {
       newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    } else if (touched.email && !/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email';
     }
-    if (!formData.age || isNaN(parseInt(formData.age)) || parseInt(formData.age) < 0) {
+    if (touched.age && (!formData.age || isNaN(parseInt(formData.age)) || parseInt(formData.age) < 0)) {
       newErrors.age = 'Please enter a valid age';
     }
-    if (formData.contactNumber.trim() === '') {
+    if (touched.contactNumber && formData.contactNumber.trim() === '') {
       newErrors.contactNumber = 'Contact number is required';
     }
-    if (!formData.admissionDate) {
+    if (touched.admissionDate && !formData.admissionDate) {
       newErrors.admissionDate = 'Admission date is required';
     }
 
     setErrors(newErrors);
-  }, [formData]);
+  }, [formData, touched]);
 
-  const validate = () => {
-    return Object.keys(errors).length === 0;
+  const handleFieldBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
+
+  const validateAllFields = () => {
+    const allFields = ['firstName', 'lastName', 'email', 'age', 'contactNumber', 'admissionDate'];
+    setTouched(allFields.reduce((acc, field) => ({ ...acc, [field]: true }), {}));
+    
+    const newErrors: Record<string, string> = {};
+    if (formData.firstName.trim() === '') newErrors.firstName = 'First name is required';
+    if (formData.lastName.trim() === '') newErrors.lastName = 'Last name is required';
+    if (formData.email.trim() === '') newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Please enter a valid email';
+    if (!formData.age || isNaN(parseInt(formData.age)) || parseInt(formData.age) < 0) newErrors.age = 'Please enter a valid age';
+    if (formData.contactNumber.trim() === '') newErrors.contactNumber = 'Contact number is required';
+    if (!formData.admissionDate) newErrors.admissionDate = 'Admission date is required';
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) {
+    if (validateAllFields()) {
       onSubmit({
         firstName: formData.firstName,
         middleName: formData.middleName || undefined,
@@ -97,7 +115,17 @@ export function PatientForm({
             placeholder="e.g., John"
             value={formData.firstName}
             onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+            onBlur={() => handleFieldBlur('firstName')}
             error={errors.firstName}
+            required
+          />
+          <FormInput
+            label="Last Name"
+            placeholder="e.g., Doe"
+            value={formData.lastName}
+            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+            onBlur={() => handleFieldBlur('lastName')}
+            error={errors.lastName}
             required
           />
           <FormInput
@@ -122,10 +150,31 @@ export function PatientForm({
         <FormInput
           label="Email"
           type="email"
-          placeholder="e.g., john.anderson@email.com"
+          placeholder="e.g., john@example.com"
           value={formData.email}
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          onBlur={() => handleFieldBlur('email')}
           error={errors.email}
+          required
+        />
+        <FormInput
+          label="Age"
+          type="number"
+          placeholder="e.g., 30"
+          value={formData.age}
+          onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+          onBlur={() => handleFieldBlur('age')}
+          error={errors.age}
+          required
+        />
+        <FormInput
+          label="Contact Number"
+          type="tel"
+          placeholder="e.g., +1 (555) 123-4567"
+          value={formData.contactNumber}
+          onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
+          onBlur={() => handleFieldBlur('contactNumber')}
+          error={errors.contactNumber}
           required
         />
         <FormInput
@@ -174,14 +223,15 @@ export function PatientForm({
       </div>
 
       {/* Admission Date */}
-      <FormInput
-        label="Admission Date"
-        type="date"
-        value={formData.admissionDate}
-        onChange={(e) => setFormData({ ...formData, admissionDate: e.target.value })}
-        error={errors.admissionDate}
-        required
-      />
+        <FormInput
+          label="Admission Date"
+          type="date"
+          value={formData.admissionDate}
+          onChange={(e) => setFormData({ ...formData, admissionDate: e.target.value })}
+          onBlur={() => handleFieldBlur('admissionDate')}
+          error={errors.admissionDate}
+          required
+        />
 
       {/* Notes Section */}
       <FormTextarea
