@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -8,7 +8,6 @@ import {
   Users,
   UserCog,
   MapPin,
-  Search,
   Grid3X3,
   List,
 } from 'lucide-react';
@@ -16,12 +15,13 @@ import { PageHeader } from '@/components/ui/page-header';
 import { DataTable } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CardSkeleton } from '@/components/ui/skeleton-loader';
+import { AdvancedFilter } from '@/components/ui/advanced-filter';
 import { mockBranches, mockStructures } from '@/lib/mock-data';
+import { STATUS_OPTIONS, FACILITY_TYPE_OPTIONS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
-import type { Branch, TableColumn } from '@/types';
+import type { Branch, TableColumn, FilterState } from '@/types';
 
 const branchColumns: TableColumn<Branch>[] = [
   {
@@ -88,7 +88,7 @@ export default function BranchesPage() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<FilterState>({ search: '' });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -98,11 +98,62 @@ export default function BranchesPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  const filteredBranches = branches.filter(
-    (branch) =>
-      branch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      branch.city.toLowerCase().includes(searchQuery.toLowerCase())
+  const structureOptions = useMemo(() => 
+    mockStructures.map(s => ({ value: s.id, label: s.title })),
+    []
   );
+
+  const filterConfig = useMemo(() => [
+    {
+      key: 'status' as keyof FilterState,
+      label: 'Status',
+      type: 'select' as const,
+      options: STATUS_OPTIONS,
+    },
+    {
+      key: 'type' as keyof FilterState,
+      label: 'Type',
+      type: 'select' as const,
+      options: FACILITY_TYPE_OPTIONS,
+    },
+    {
+      key: 'structureId' as keyof FilterState,
+      label: 'Structure',
+      type: 'select' as const,
+      options: structureOptions,
+    },
+  ], [structureOptions]);
+
+  const filteredBranches = useMemo(() => {
+    return branches.filter((branch) => {
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const matchesSearch = 
+          branch.title.toLowerCase().includes(searchLower) ||
+          branch.code.toLowerCase().includes(searchLower) ||
+          branch.city.toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
+      }
+      
+      // Status filter
+      if (filters.status && branch.status !== filters.status) {
+        return false;
+      }
+      
+      // Type filter
+      if (filters.type && branch.type !== filters.type) {
+        return false;
+      }
+      
+      // Structure filter
+      if (filters.structureId && branch.structureId !== filters.structureId) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [branches, filters]);
 
   const handleRowClick = (branch: Branch) => {
     router.push(`/dashboard/branches/${branch.id}`);
@@ -119,32 +170,30 @@ export default function BranchesPage() {
         ]}
       />
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative max-w-sm flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search branches..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant={viewMode === 'grid' ? 'default' : 'outline'}
-            size="icon"
-            onClick={() => setViewMode('grid')}
-          >
-            <Grid3X3 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'outline'}
-            size="icon"
-            onClick={() => setViewMode('list')}
-          >
-            <List className="h-4 w-4" />
-          </Button>
+      <div className="flex flex-col gap-4">
+        <AdvancedFilter
+          filters={filters}
+          onFilterChange={setFilters}
+          config={filterConfig}
+          searchPlaceholder="Search branches by name, code, or city..."
+        />
+        <div className="flex justify-end">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'outline'}
+              size="icon"
+              onClick={() => setViewMode('grid')}
+            >
+              <Grid3X3 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="icon"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -160,18 +209,16 @@ export default function BranchesPage() {
             icon="GitBranch"
             title="No branches found"
             description={
-              searchQuery
-                ? 'Try adjusting your search criteria'
-                : 'There are no branches in your organization yet'
+              filters.search || filters.status || filters.type || filters.structureId
+                ? 'Try adjusting your search or filter criteria'
+                : 'There are no branches in your network yet'
             }
           />
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredBranches.map((branch) => {
-            const structure = mockStructures.find(
-              (s) => s.id === branch.structureId
-            );
+            const structure = mockStructures.find((s) => s.id === branch.structureId);
             return (
               <Link
                 key={branch.id}
@@ -179,8 +226,56 @@ export default function BranchesPage() {
                 className={cn(
                   'group rounded-xl border border-border bg-card p-5',
                   'hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5',
-                  'transition-all duration-300'
+                  'transition-all duration-300 block'
                 )}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="h-12 w-12 rounded-lg bg-accent/10 flex items-center justify-center group-hover:bg-accent group-hover:text-accent-foreground transition-colors">
+                    <GitBranch className="h-6 w-6 text-accent group-hover:text-accent-foreground transition-colors" />
+                  </div>
+                  <StatusBadge status={branch.status} />
+                </div>
+                <h3 className="font-semibold text-foreground mb-1 truncate">{branch.title}</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {structure?.title || 'Unknown Structure'}
+                </p>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{branch.city}, {branch.state}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 pt-3 border-t border-border">
+                    <div>
+                      <span className="text-muted-foreground">Patients</span>
+                      <div className="flex items-center gap-1 mt-1">
+                        <Users className="h-4 w-4 text-primary" />
+                        <span className="font-medium">{branch.patientCount}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Staff</span>
+                      <div className="flex items-center gap-1 mt-1">
+                        <UserCog className="h-4 w-4 text-accent" />
+                        <span className="font-medium">{branch.userCount}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        <DataTable
+          columns={branchColumns}
+          data={filteredBranches}
+          keyField="id"
+          onRowClick={handleRowClick}
+          emptyTitle="No branches found"
+          emptyDescription="There are no branches matching your criteria"
+          emptyIcon="GitBranch"
+        />
+      )}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary transition-colors">

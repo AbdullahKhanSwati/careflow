@@ -84,6 +84,9 @@ export function StructureForm({
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email';
     }
+    if (!formData.county.trim()) {
+      newErrors.county = 'County is required';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
