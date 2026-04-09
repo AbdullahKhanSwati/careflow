@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Building2,
   GitBranch,
@@ -10,8 +11,11 @@ import {
   Phone,
   Mail,
   Edit,
-  Trash2,
   ArrowLeft,
+  Globe,
+  Clock,
+  FileText,
+  Calendar,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
@@ -28,9 +32,7 @@ import {
 import { BranchForm } from '@/components/features/branches/branch-form';
 import { mockStructures, mockBranches } from '@/lib/mock-data';
 import { useToast } from '@/components/providers/toast-provider';
-import { cn } from '@/lib/utils';
 import type { Structure, Branch } from '@/types';
-import Link from 'next/link';
 
 interface StructureDetailPageProps {
   params: Promise<{ id: string }>;
@@ -47,7 +49,6 @@ export default function StructureDetailPage({ params }: StructureDetailPageProps
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // Simulate loading
     const timer = setTimeout(() => {
       const foundStructure = mockStructures.find((s) => s.id === id);
       const structureBranches = mockBranches.filter((b) => b.structureId === id);
@@ -75,7 +76,7 @@ export default function StructureDetailPage({ params }: StructureDetailPageProps
     setBranches((prev) => [newBranch, ...prev]);
     setIsModalOpen(false);
     setIsSubmitting(false);
-    success('Branch Created', `${data.name} has been added to this structure.`);
+    success('Branch Created', `${data.title} has been added to this structure.`);
   };
 
   if (isLoading) {
@@ -108,12 +109,12 @@ export default function StructureDetailPage({ params }: StructureDetailPageProps
   return (
     <div className="space-y-6">
       <PageHeader
-        title={structure.name}
-        description={structure.description}
+        title={structure.title}
+        description={`${structure.city}, ${structure.state} - Code: ${structure.code}`}
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Structures', href: '/dashboard/structures' },
-          { label: structure.name },
+          { label: structure.title },
         ]}
         actions={
           <div className="flex items-center gap-3">
@@ -137,26 +138,48 @@ export default function StructureDetailPage({ params }: StructureDetailPageProps
               <Building2 className="h-7 w-7 text-primary" />
             </div>
             <div>
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 mb-2 flex-wrap">
                 <h2 className="text-xl font-semibold text-foreground">
-                  {structure.name}
+                  {structure.title}
                 </h2>
                 <StatusBadge status={structure.status} />
+                <span className="text-sm text-muted-foreground bg-muted px-2 py-0.5 rounded capitalize">
+                  {structure.type.replace('_', ' ')}
+                </span>
               </div>
-              <p className="text-muted-foreground mb-4">{structure.description}</p>
-              <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Region Code:</span>
-                  <span className="font-medium text-foreground">
-                    {structure.regionCode}
-                  </span>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-4">
+                <div className="flex items-center gap-2 text-sm">
+                  <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">{structure.address}, {structure.city}, {structure.state} {structure.zipCode}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Branches:</span>
-                  <span className="font-medium text-foreground">
-                    {branches.length}
-                  </span>
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">{structure.phone}</span>
                 </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">{structure.email}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">License: {structure.license}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">Expires: {structure.licenseExpiry}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">{structure.timezone.replace('America/', '')}</span>
+                </div>
+                {structure.website && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <a href={structure.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      {structure.website.replace('https://', '')}
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -198,9 +221,9 @@ export default function StructureDetailPage({ params }: StructureDetailPageProps
                     </div>
                     <div className="min-w-0 text-left">
                       <p className="font-medium text-foreground truncate">
-                        {branch.name}
+                        {branch.title}
                       </p>
-                      <p className="text-sm text-muted-foreground">{branch.city}</p>
+                      <p className="text-sm text-muted-foreground">{branch.city}, {branch.state}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4 mr-4">
@@ -221,7 +244,7 @@ export default function StructureDetailPage({ params }: StructureDetailPageProps
                       <div className="flex items-center gap-3 text-sm">
                         <Phone className="h-4 w-4 text-muted-foreground" />
                         <span className="text-muted-foreground">
-                          {branch.contactNumber}
+                          {branch.phone}
                         </span>
                       </div>
                       <div className="flex items-center gap-3 text-sm">
@@ -250,7 +273,7 @@ export default function StructureDetailPage({ params }: StructureDetailPageProps
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Add New Branch"
-        description={`Add a new branch to ${structure.name}`}
+        description={`Add a new branch to ${structure.title}`}
         size="lg"
       >
         <BranchForm

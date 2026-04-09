@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   GitBranch,
   Users,
@@ -13,6 +14,10 @@ import {
   ArrowLeft,
   Grid3X3,
   List,
+  Globe,
+  Clock,
+  FileText,
+  Calendar,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
@@ -32,7 +37,7 @@ import { UserForm } from '@/components/features/users/user-form';
 import { mockBranches, mockStructures, mockPatients, mockUsers } from '@/lib/mock-data';
 import { useToast } from '@/components/providers/toast-provider';
 import { cn } from '@/lib/utils';
-import type { Branch, Patient, User, TableColumn } from '@/types';
+import type { Branch, Patient, User, TableColumn, PatientStatus, StaffStatus } from '@/types';
 
 interface BranchDetailPageProps {
   params: Promise<{ id: string }>;
@@ -40,22 +45,27 @@ interface BranchDetailPageProps {
 
 const patientColumns: TableColumn<Patient>[] = [
   {
-    key: 'fullName',
+    key: 'firstName',
     header: 'Patient',
     sortable: true,
-    render: (_, row) => (
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-          <span className="text-sm font-medium text-primary">
-            {row.fullName.charAt(0)}
-          </span>
-        </div>
-        <div className="min-w-0">
-          <p className="font-medium text-foreground truncate">{row.fullName}</p>
-          <p className="text-sm text-muted-foreground">{row.contactNumber}</p>
-        </div>
-      </div>
-    ),
+    render: (_, row) => {
+      const fullName = [row.firstName, row.middleName, row.lastName].filter(Boolean).join(' ');
+      return (
+        <Link href={`/dashboard/patients/${row.id}`} className="block">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <span className="text-sm font-medium text-primary">
+                {row.firstName.charAt(0)}{row.lastName.charAt(0)}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <p className="font-medium text-foreground truncate hover:text-primary transition-colors">{fullName}</p>
+              <p className="text-sm text-muted-foreground">{row.contactNumber}</p>
+            </div>
+          </div>
+        </Link>
+      );
+    },
   },
   {
     key: 'age',
@@ -73,31 +83,36 @@ const patientColumns: TableColumn<Patient>[] = [
     key: 'status',
     header: 'Status',
     sortable: true,
-    render: (value) => <StatusBadge status={value as 'active' | 'inactive' | 'pending'} />,
+    render: (value) => <StatusBadge status={value as PatientStatus} />,
   },
 ];
 
 const userColumns: TableColumn<User>[] = [
   {
-    key: 'fullName',
+    key: 'firstName',
     header: 'Staff Member',
     sortable: true,
-    render: (_, row) => (
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
-          <span className="text-sm font-medium text-accent">
-            {row.fullName.charAt(0)}
-          </span>
-        </div>
-        <div className="min-w-0">
-          <p className="font-medium text-foreground truncate">{row.fullName}</p>
-          <p className="text-sm text-muted-foreground">{row.email}</p>
-        </div>
-      </div>
-    ),
+    render: (_, row) => {
+      const fullName = [row.firstName, row.middleName, row.lastName].filter(Boolean).join(' ');
+      return (
+        <Link href={`/dashboard/staff/${row.id}`} className="block">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+              <span className="text-sm font-medium text-accent">
+                {row.firstName.charAt(0)}{row.lastName.charAt(0)}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <p className="font-medium text-foreground truncate hover:text-accent transition-colors">{fullName}</p>
+              <p className="text-sm text-muted-foreground">{row.email}</p>
+            </div>
+          </div>
+        </Link>
+      );
+    },
   },
   {
-    key: 'phone',
+    key: 'contactNumber',
     header: 'Phone',
     sortable: false,
   },
@@ -111,7 +126,7 @@ const userColumns: TableColumn<User>[] = [
     key: 'status',
     header: 'Status',
     sortable: true,
-    render: (value) => <StatusBadge status={value as 'active' | 'inactive' | 'pending'} />,
+    render: (value) => <StatusBadge status={value as StaffStatus} />,
   },
 ];
 
@@ -131,7 +146,7 @@ export default function BranchDetailPage({ params }: BranchDetailPageProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
       const foundBranch = mockBranches.find((b) => b.id === id);
-      const branchPatients = mockPatients.filter((p) => p.branchId === id);
+      const branchPatients = mockPatients.filter((p) => p.branchIds.includes(id));
       const branchUsers = mockUsers.filter((u) => u.branchId === id);
       setBranch(foundBranch || null);
       setPatients(branchPatients);
@@ -141,14 +156,16 @@ export default function BranchDetailPage({ params }: BranchDetailPageProps) {
     return () => clearTimeout(timer);
   }, [id]);
 
-  const handleCreatePatient = async (data: Omit<Patient, 'id' | 'createdAt' | 'updatedAt' | 'branchId'>) => {
+  const handleCreatePatient = async (data: Omit<Patient, 'id' | 'createdAt' | 'updatedAt' | 'mainBranchId' | 'branchIds' | 'assignedStaffIds'>) => {
     setIsSubmitting(true);
     await new Promise((resolve) => setTimeout(resolve, 1000));
     
     const newPatient: Patient = {
       ...data,
       id: `pat-${Date.now()}`,
-      branchId: id,
+      mainBranchId: id,
+      branchIds: [id],
+      assignedStaffIds: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -156,10 +173,11 @@ export default function BranchDetailPage({ params }: BranchDetailPageProps) {
     setPatients((prev) => [newPatient, ...prev]);
     setPatientModalOpen(false);
     setIsSubmitting(false);
-    success('Patient Added', `${data.fullName} has been registered successfully.`);
+    const fullName = [data.firstName, data.middleName, data.lastName].filter(Boolean).join(' ');
+    success('Patient Added', `${fullName} has been registered successfully.`);
   };
 
-  const handleCreateUser = async (data: Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'branchId' | 'avatar'>) => {
+  const handleCreateUser = async (data: Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'branchId' | 'avatar' | 'assignedPatientIds'>) => {
     setIsSubmitting(true);
     await new Promise((resolve) => setTimeout(resolve, 1000));
     
@@ -167,6 +185,7 @@ export default function BranchDetailPage({ params }: BranchDetailPageProps) {
       ...data,
       id: `usr-${Date.now()}`,
       branchId: id,
+      assignedPatientIds: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -174,7 +193,8 @@ export default function BranchDetailPage({ params }: BranchDetailPageProps) {
     setUsers((prev) => [newUser, ...prev]);
     setUserModalOpen(false);
     setIsSubmitting(false);
-    success('Staff Added', `${data.fullName} has been added to the team.`);
+    const fullName = [data.firstName, data.middleName, data.lastName].filter(Boolean).join(' ');
+    success('Staff Added', `${fullName} has been added to the team.`);
   };
 
   const structure = branch
@@ -211,12 +231,12 @@ export default function BranchDetailPage({ params }: BranchDetailPageProps) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={branch.name}
-        description={`${branch.city} - Part of ${structure?.name || 'Unknown Structure'}`}
+        title={branch.title}
+        description={`${branch.city}, ${branch.state} - Part of ${structure?.title || 'Unknown Structure'}`}
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Branches', href: '/dashboard/branches' },
-          { label: branch.name },
+          { label: branch.title },
         ]}
         actions={
           <Button variant="outline" onClick={() => router.back()}>
@@ -234,25 +254,48 @@ export default function BranchDetailPage({ params }: BranchDetailPageProps) {
               <GitBranch className="h-7 w-7 text-accent" />
             </div>
             <div>
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 mb-2 flex-wrap">
                 <h2 className="text-xl font-semibold text-foreground">
-                  {branch.name}
+                  {branch.title}
                 </h2>
                 <StatusBadge status={branch.status} />
+                <span className="text-sm text-muted-foreground bg-muted px-2 py-0.5 rounded capitalize">
+                  {branch.type.replace('_', ' ')}
+                </span>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-4">
                 <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">{branch.address}</span>
+                  <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">{branch.address}, {branch.city}, {branch.state} {branch.zipCode}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">{branch.contactNumber}</span>
+                  <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">{branch.phone}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
                   <span className="text-muted-foreground">{branch.email}</span>
                 </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">License: {branch.license}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">Expires: {branch.licenseExpiry}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">{branch.timezone.replace('America/', '')}</span>
+                </div>
+                {branch.website && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <a href={branch.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      {branch.website.replace('https://', '')}
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -331,41 +374,55 @@ export default function BranchDetailPage({ params }: BranchDetailPageProps) {
                 keyField="id"
                 searchable
                 searchPlaceholder="Search patients..."
-                searchFields={['fullName', 'contactNumber', 'address']}
+                searchFields={['firstName', 'lastName', 'contactNumber', 'email']}
               />
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {patients.map((patient) => (
-                  <div
-                    key={patient.id}
-                    className={cn(
-                      'rounded-xl border border-border bg-card p-5',
-                      'hover:border-primary/30 hover:shadow-md',
-                      'transition-all duration-200'
-                    )}
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-lg font-semibold text-primary">
-                          {patient.fullName.charAt(0)}
-                        </span>
+                {patients.map((patient) => {
+                  const fullName = [patient.firstName, patient.middleName, patient.lastName].filter(Boolean).join(' ');
+                  const isMainBranch = patient.mainBranchId === id;
+                  return (
+                    <Link
+                      key={patient.id}
+                      href={`/dashboard/patients/${patient.id}`}
+                      className={cn(
+                        'rounded-xl border border-border bg-card p-5',
+                        'hover:border-primary/30 hover:shadow-md',
+                        'transition-all duration-200 block'
+                      )}
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-lg font-semibold text-primary">
+                            {patient.firstName.charAt(0)}{patient.lastName.charAt(0)}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          <StatusBadge status={patient.status} />
+                          {isMainBranch && (
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">Main Branch</span>
+                          )}
+                        </div>
                       </div>
-                      <StatusBadge status={patient.status} />
-                    </div>
-                    <h4 className="font-semibold text-foreground mb-1">
-                      {patient.fullName}
-                    </h4>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {patient.age} yrs, {patient.gender}
-                    </p>
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-3.5 w-3.5" />
-                        {patient.contactNumber}
+                      <h4 className="font-semibold text-foreground mb-1">
+                        {fullName}
+                      </h4>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {patient.age} yrs, {patient.gender}
+                      </p>
+                      <div className="space-y-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-3.5 w-3.5" />
+                          {patient.contactNumber}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-3.5 w-3.5" />
+                          {patient.email}
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -396,45 +453,49 @@ export default function BranchDetailPage({ params }: BranchDetailPageProps) {
                 keyField="id"
                 searchable
                 searchPlaceholder="Search staff..."
-                searchFields={['fullName', 'email', 'phone']}
+                searchFields={['firstName', 'lastName', 'email', 'contactNumber']}
               />
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {users.map((user) => (
-                  <div
-                    key={user.id}
-                    className={cn(
-                      'rounded-xl border border-border bg-card p-5',
-                      'hover:border-accent/30 hover:shadow-md',
-                      'transition-all duration-200'
-                    )}
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center">
-                        <span className="text-lg font-semibold text-accent">
-                          {user.fullName.charAt(0)}
-                        </span>
+                {users.map((user) => {
+                  const fullName = [user.firstName, user.middleName, user.lastName].filter(Boolean).join(' ');
+                  return (
+                    <Link
+                      key={user.id}
+                      href={`/dashboard/staff/${user.id}`}
+                      className={cn(
+                        'rounded-xl border border-border bg-card p-5',
+                        'hover:border-accent/30 hover:shadow-md',
+                        'transition-all duration-200 block'
+                      )}
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center">
+                          <span className="text-lg font-semibold text-accent">
+                            {user.firstName.charAt(0)}{user.lastName.charAt(0)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={user.role} />
+                          <StatusBadge status={user.status} />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <StatusBadge status={user.role} />
-                        <StatusBadge status={user.status} />
+                      <h4 className="font-semibold text-foreground mb-1">
+                        {fullName}
+                      </h4>
+                      <div className="space-y-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-3.5 w-3.5" />
+                          {user.email}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-3.5 w-3.5" />
+                          {user.contactNumber}
+                        </div>
                       </div>
-                    </div>
-                    <h4 className="font-semibold text-foreground mb-1">
-                      {user.fullName}
-                    </h4>
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-3.5 w-3.5" />
-                        {user.email}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-3.5 w-3.5" />
-                        {user.phone}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -445,7 +506,7 @@ export default function BranchDetailPage({ params }: BranchDetailPageProps) {
         isOpen={patientModalOpen}
         onClose={() => setPatientModalOpen(false)}
         title="Add New Patient"
-        description={`Register a new patient at ${branch.name}`}
+        description={`Register a new patient at ${branch.title}`}
         size="lg"
       >
         <PatientForm
@@ -459,7 +520,7 @@ export default function BranchDetailPage({ params }: BranchDetailPageProps) {
         isOpen={userModalOpen}
         onClose={() => setUserModalOpen(false)}
         title="Add Staff Member"
-        description={`Add a new staff member to ${branch.name}`}
+        description={`Add a new staff member to ${branch.title}`}
         size="lg"
       >
         <UserForm
