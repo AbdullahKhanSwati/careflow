@@ -12,6 +12,7 @@ import {
   Settings,
   LogOut,
   Activity,
+  Stethoscope,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { sidebarMenuItems, sidebarConfig } from '@/config/sidebar';
@@ -24,6 +25,7 @@ const iconMap: Record<string, React.ElementType> = {
   UserCog,
   Settings,
   Activity,
+  Stethoscope,
 };
 
 export function Sidebar() {

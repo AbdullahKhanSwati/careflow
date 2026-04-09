@@ -19,7 +19,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { CardSkeleton } from '@/components/ui/skeleton-loader';
 import { AdvancedFilter } from '@/components/ui/advanced-filter';
 import { mockPatients, mockBranches } from '@/lib/mock-data';
-import { PATIENT_STATUS_OPTIONS } from '@/lib/constants';
+import { PATIENT_STATUS_OPTIONS } from '@/lib/constants/index';
 import { cn } from '@/lib/utils';
 import type { Patient, TableColumn, FilterState, PatientStatus } from '@/types';
 

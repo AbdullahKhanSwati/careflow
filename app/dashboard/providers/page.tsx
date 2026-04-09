@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, Grid3X3, List, Building2 } from 'lucide-react';
+import { Plus, Grid3X3, List, Stethoscope } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { DataTable } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
@@ -12,18 +12,59 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CardSkeleton } from '@/components/ui/skeleton-loader';
 import { AdvancedFilter } from '@/components/ui/advanced-filter';
-import { StructureForm } from '@/components/features/structures/structure-form';
-import { structuresColumns } from '@/components/features/structures/structures-columns';
-import { mockStructures } from '@/lib/mock-data';
+import { ProviderForm } from '@/components/features/providers/provider-form';
+import { mockProviders } from '@/lib/mock-data';
 import { useToast } from '@/components/providers/toast-provider';
-import { STATUS_OPTIONS, FACILITY_TYPE_OPTIONS } from '@/lib/constants/index';
+import { PROVIDER_STATUS_OPTIONS, PROVIDER_SPECIALTY_OPTIONS, PROVIDER_TYPE_OPTIONS } from '@/lib/constants/index';
 import { cn } from '@/lib/utils';
-import type { Structure, FilterState } from '@/types';
+import type { Provider, FilterState, TableColumn } from '@/types';
 
-export default function StructuresPage() {
+const providerColumns: TableColumn<Provider>[] = [
+  {
+    key: 'firstName',
+    header: 'Name',
+    render: (_, row: Provider) => `${row.firstName} ${row.lastName}`,
+  },
+  {
+    key: 'providerType',
+    header: 'Type',
+    render: (value) => (
+      <span className="capitalize">
+        {value === 'individual' ? 'Individual' : 'Organization'}
+      </span>
+    ),
+  },
+  {
+    key: 'specialty',
+    header: 'Specialty',
+    render: (value) => {
+      const specialty = PROVIDER_SPECIALTY_OPTIONS.find(s => s.value === value);
+      return specialty?.label || value;
+    },
+  },
+  {
+    key: 'npiNumber',
+    header: 'NPI Number',
+  },
+  {
+    key: 'email',
+    header: 'Email',
+  },
+  {
+    key: 'phone',
+    header: 'Phone',
+  },
+  {
+    key: 'status',
+    header: 'Status',
+    render: (value) => <StatusBadge status={value as any} />,
+  },
+];
+
+export default function ProvidersPage() {
   const router = useRouter();
   const { success } = useToast();
-  const [structures, setStructures] = useState<Structure[]>([]);
+  const [providers, setProviders] = useState<Provider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,95 +74,101 @@ export default function StructuresPage() {
   useEffect(() => {
     // Simulate loading
     const timer = setTimeout(() => {
-      setStructures(mockStructures);
+      setProviders(mockProviders);
       setIsLoading(false);
     }, 800);
     return () => clearTimeout(timer);
   }, []);
-
-  const structureTypeOptions = useMemo(
-    () => FACILITY_TYPE_OPTIONS,
-    []
-  );
 
   const filterConfig = useMemo(() => [
     {
       key: 'status' as keyof FilterState,
       label: 'Status',
       type: 'select' as const,
-      options: STATUS_OPTIONS,
+      options: PROVIDER_STATUS_OPTIONS,
     },
     {
       key: 'type' as keyof FilterState,
       label: 'Type',
       type: 'select' as const,
-      options: FACILITY_TYPE_OPTIONS,
+      options: PROVIDER_TYPE_OPTIONS,
+    },
+    {
+      key: 'specialty' as keyof FilterState,
+      label: 'Specialty',
+      type: 'select' as const,
+      options: PROVIDER_SPECIALTY_OPTIONS,
     },
   ], []);
 
-  const filteredStructures = useMemo(() => {
-    return structures.filter((structure) => {
+  const filteredProviders = useMemo(() => {
+    return providers.filter((provider) => {
       // Search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
-        const matchesSearch = 
-          structure.title.toLowerCase().includes(searchLower) ||
-          structure.code.toLowerCase().includes(searchLower) ||
-          structure.city.toLowerCase().includes(searchLower);
+        const matchesSearch =
+          provider.firstName.toLowerCase().includes(searchLower) ||
+          provider.lastName.toLowerCase().includes(searchLower) ||
+          provider.npiNumber.toLowerCase().includes(searchLower) ||
+          provider.email.toLowerCase().includes(searchLower);
         if (!matchesSearch) return false;
       }
-      
+
       // Status filter
-      if (filters.status && structure.status !== filters.status) {
+      if (filters.status && provider.status !== filters.status) {
         return false;
       }
-      
+
       // Type filter
-      if (filters.type && structure.type !== filters.type) {
+      if (filters.type && provider.providerType !== filters.type) {
         return false;
       }
-      
+
+      // Specialty filter
+      if (filters.specialty && provider.specialty !== filters.specialty) {
+        return false;
+      }
+
       return true;
     });
-  }, [structures, filters]);
+  }, [providers, filters]);
 
-  const handleCreateStructure = async (data: Omit<Structure, 'id' | 'createdAt' | 'updatedAt' | 'branchCount'>) => {
+  const handleCreateProvider = async (data: Omit<Provider, 'id' | 'createdAt' | 'updatedAt'>) => {
     setIsSubmitting(true);
-    
+
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    const newStructure: Structure = {
+
+    const newProvider: Provider = {
       ...data,
-      id: `str-${Date.now()}`,
-      branchCount: 0,
+      id: `prov-${Date.now()}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    
-    setStructures((prev) => [newStructure, ...prev]);
+
+    setProviders((prev) => [newProvider, ...prev]);
     setIsModalOpen(false);
     setIsSubmitting(false);
-    success('Structure Created', `${data.title} has been created successfully.`);
+    success('Provider Created', `${data.firstName} ${data.lastName} has been created successfully.`);
   };
 
-  const handleRowClick = (structure: Structure) => {
-    router.push(`/dashboard/structures/${structure.id}`);
+  const handleRowClick = (provider: Provider) => {
+    router.push(`/dashboard/providers/${provider.id}`);
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Structures"
-        description="Manage regional groupings for your healthcare network"
+        title="Providers"
+        description="Manage healthcare providers and doctors"
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Structures' },
+          { label: 'Providers' },
         ]}
         actions={
           <Button onClick={() => setIsModalOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Create Structure
+            Add Provider
           </Button>
         }
       />
@@ -131,7 +178,7 @@ export default function StructuresPage() {
           filters={filters}
           onFilterChange={setFilters}
           config={filterConfig}
-          searchPlaceholder="Search structures by name, code, or city..."
+          searchPlaceholder="Search providers by name, NPI, or email..."
         />
         <div className="flex justify-end">
           <div className="flex items-center gap-2">
@@ -159,24 +206,24 @@ export default function StructuresPage() {
             <CardSkeleton key={i} />
           ))}
         </div>
-      ) : filteredStructures.length === 0 ? (
+      ) : filteredProviders.length === 0 ? (
         <div className="rounded-xl border border-border bg-card">
           <EmptyState
-            icon="Building2"
-            title="No structures found"
+            icon="Stethoscope"
+            title="No providers found"
             description={
-              filters.search || filters.status || filters.type
+              filters.search || filters.status || filters.type || filters.specialty
                 ? 'Try adjusting your search or filter criteria'
-                : 'Get started by creating your first structure'
+                : 'Get started by adding your first provider'
             }
           />
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredStructures.map((structure) => (
+          {filteredProviders.map((provider) => (
             <Link
-              key={structure.id}
-              href={`/dashboard/structures/${structure.id}`}
+              key={provider.id}
+              href={`/dashboard/providers/${provider.id}`}
               className={cn(
                 'group rounded-xl border border-border bg-card p-5',
                 'hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5',
@@ -185,27 +232,30 @@ export default function StructuresPage() {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary transition-colors">
-                  <Building2 className="h-6 w-6 text-primary group-hover:text-primary-foreground transition-colors" />
+                  <Stethoscope className="h-6 w-6 text-primary group-hover:text-primary-foreground transition-colors" />
                 </div>
-                <StatusBadge status={structure.status} />
+                <StatusBadge status={provider.status} />
               </div>
               <h3 className="font-semibold text-foreground mb-1 truncate">
-                {structure.title}
+                {provider.firstName} {provider.lastName}
               </h3>
-              <p className="text-xs text-muted-foreground mb-2 truncate">{structure.notes}</p>
-              <p className="text-sm text-muted-foreground mb-4">{structure.city}, {structure.state}</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                {PROVIDER_SPECIALTY_OPTIONS.find(s => s.value === provider.specialty)?.label}
+              </p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Code:</span>
-                  <span className="font-medium text-foreground">{structure.code}</span>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-muted-foreground">Type:</span>
-                  <span className="font-medium text-foreground capitalize">{structure.type.replace('_', ' ')}</span>
+                  <span className="font-medium text-foreground capitalize">
+                    {provider.providerType === 'individual' ? 'Individual' : 'Organization'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Branches:</span>
-                  <span className="font-medium text-foreground">{structure.branchCount}</span>
+                  <span className="text-muted-foreground">NPI:</span>
+                  <span className="font-medium text-foreground">{provider.npiNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Email:</span>
+                  <span className="font-medium text-foreground text-xs truncate">{provider.email}</span>
                 </div>
               </div>
             </Link>
@@ -213,25 +263,24 @@ export default function StructuresPage() {
         </div>
       ) : (
         <DataTable
-          columns={structuresColumns}
-          data={filteredStructures}
+          columns={providerColumns}
+          data={filteredProviders}
           keyField="id"
           onRowClick={handleRowClick}
-          emptyTitle="No structures found"
-          emptyDescription="There are no structures matching your criteria"
-          emptyIcon="Building2"
+          emptyTitle="No providers found"
+          emptyDescription="There are no providers matching your criteria"
+          emptyIcon="Stethoscope"
         />
       )}
 
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Create New Structure"
-        description="Add a new regional structure to your organization"
-        size="lg"
+        title="Add Provider"
+        description="Create a new healthcare provider"
       >
-        <StructureForm
-          onSubmit={handleCreateStructure}
+        <ProviderForm
+          onSubmit={handleCreateProvider}
           onCancel={() => setIsModalOpen(false)}
           isLoading={isSubmitting}
         />

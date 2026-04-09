@@ -18,7 +18,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { CardSkeleton } from '@/components/ui/skeleton-loader';
 import { AdvancedFilter } from '@/components/ui/advanced-filter';
 import { mockUsers, mockBranches } from '@/lib/mock-data';
-import { STAFF_STATUS_OPTIONS, ROLE_OPTIONS } from '@/lib/constants';
+import { STAFF_STATUS_OPTIONS, ROLE_OPTIONS } from '@/lib/constants/index';
 import { cn } from '@/lib/utils';
 import type { User, TableColumn, FilterState, StaffStatus } from '@/types';
 

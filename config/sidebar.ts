@@ -32,6 +32,12 @@ export const sidebarMenuItems: SidebarMenuItem[] = [
     route: '/dashboard/staff',
   },
   {
+    id: 'providers',
+    label: 'Providers',
+    icon: 'Stethoscope',
+    route: '/dashboard/providers',
+  },
+  {
     id: 'settings',
     label: 'Settings',
     icon: 'Settings',

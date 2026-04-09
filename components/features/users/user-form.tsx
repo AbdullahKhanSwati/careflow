@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FormInput, FormTextarea, FormSelect } from '@/components/ui/form-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { STAFF_STATUS_OPTIONS, ROLE_OPTIONS, GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from '@/lib/constants';
+import { STAFF_STATUS_OPTIONS, ROLE_OPTIONS, GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from '@/lib/constants/index';
 import type { User, StaffStatus, UserRole, Gender, MaritalStatus } from '@/types';
 
 interface UserFormProps {
@@ -42,48 +42,73 @@ export function UserForm({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const isEditMode = Boolean(initialData?.firstName);
 
-  const validate = () => {
+  // Validate only touched fields
+  useEffect(() => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.firstName.trim()) {
+    if (touched.firstName && formData.firstName.trim() === '') {
       newErrors.firstName = 'First name is required';
     }
-    if (!formData.lastName.trim()) {
+    if (touched.lastName && formData.lastName.trim() === '') {
       newErrors.lastName = 'Last name is required';
     }
-    if (!formData.email.trim()) {
+    if (touched.email && formData.email.trim() === '') {
       newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    } else if (touched.email && !/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email';
     }
-    if (!isEditMode && !formData.password) {
+    if (touched.password && !isEditMode && !formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password && formData.password.length < 8) {
+    } else if (touched.password && formData.password && formData.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
     }
-    if (formData.password && formData.password !== formData.confirmPassword) {
+    if (touched.confirmPassword && formData.password && formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
-    if (!formData.age || isNaN(parseInt(formData.age)) || parseInt(formData.age) < 18) {
+    if (touched.age && (!formData.age || isNaN(parseInt(formData.age)) || parseInt(formData.age) < 18)) {
       newErrors.age = 'Please enter a valid age (18+)';
     }
-    if (!formData.contactNumber.trim()) {
+    if (touched.contactNumber && formData.contactNumber.trim() === '') {
       newErrors.contactNumber = 'Contact number is required';
     }
-    if (!formData.admissionDate) {
+    if (touched.admissionDate && !formData.admissionDate) {
       newErrors.admissionDate = 'Hire date is required';
     }
 
+    setErrors(newErrors);
+  }, [formData, touched, isEditMode]);
+
+  const handleFieldBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
+
+  const validateAllFields = () => {
+    const allFields = ['firstName', 'lastName', 'email', 'password', 'confirmPassword', 'age', 'contactNumber', 'admissionDate'];
+    setTouched(allFields.reduce((acc, field) => ({ ...acc, [field]: true }), {}));
+    
+    const newErrors: Record<string, string> = {};
+    if (formData.firstName.trim() === '') newErrors.firstName = 'First name is required';
+    if (formData.lastName.trim() === '') newErrors.lastName = 'Last name is required';
+    if (formData.email.trim() === '') newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Please enter a valid email';
+    if (!isEditMode && !formData.password) newErrors.password = 'Password is required';
+    else if (formData.password && formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
+    if (formData.password && formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    if (!formData.age || isNaN(parseInt(formData.age)) || parseInt(formData.age) < 18) newErrors.age = 'Please enter a valid age (18+)';
+    if (formData.contactNumber.trim() === '') newErrors.contactNumber = 'Contact number is required';
+    if (!formData.admissionDate) newErrors.admissionDate = 'Hire date is required';
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) {
+    if (validateAllFields()) {
       onSubmit({
         firstName: formData.firstName,
         middleName: formData.middleName || undefined,

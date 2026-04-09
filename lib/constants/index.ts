@@ -59,6 +59,22 @@ export const ROLE_OPTIONS = [
   { value: 'staff', label: 'Staff' },
 ];
 
+// Branch status options
+export const BRANCH_STATUS_OPTIONS = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'suspended', label: 'Suspended' },
+  { value: 'pending', label: 'Pending' },
+];
+
+// Branch type options
+export const BRANCH_TYPE_OPTIONS = [
+  { value: 'primary_branch', label: 'Primary Branch' },
+  { value: 'secondary_branch', label: 'Secondary Branch' },
+  { value: 'clinic', label: 'Clinic' },
+  { value: 'satellite_center', label: 'Satellite Center' },
+];
+
 // US Timezones
 export const US_TIMEZONE_OPTIONS = [
   { value: 'America/New_York', label: 'Eastern Time (ET)' },
@@ -69,6 +85,9 @@ export const US_TIMEZONE_OPTIONS = [
   { value: 'America/Anchorage', label: 'Alaska Time (AKT)' },
   { value: 'Pacific/Honolulu', label: 'Hawaii Time (HT)' },
 ];
+
+// Timezone options (alias for compatibility)
+export const TIMEZONE_OPTIONS = US_TIMEZONE_OPTIONS;
 
 // Pagination defaults
 export const DEFAULT_PAGE_SIZE = 10;
@@ -99,3 +118,27 @@ export const BREAKPOINTS = {
   xl: 1280,
   '2xl': 1536,
 };
+
+// Provider type options
+export const PROVIDER_TYPE_OPTIONS = [
+  { value: 'individual', label: 'Individual Provider' },
+  { value: 'organization', label: 'Organization' },
+];
+
+// Provider specialty options
+export const PROVIDER_SPECIALTY_OPTIONS = [
+  { value: 'general_practice', label: 'General Practice' },
+  { value: 'cardiology', label: 'Cardiology' },
+  { value: 'pediatrics', label: 'Pediatrics' },
+  { value: 'orthopedics', label: 'Orthopedics' },
+  { value: 'psychiatry', label: 'Psychiatry' },
+  { value: 'surgery', label: 'Surgery' },
+  { value: 'other', label: 'Other' },
+];
+
+// Provider status options
+export const PROVIDER_STATUS_OPTIONS = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'pending', label: 'Pending' },
+];

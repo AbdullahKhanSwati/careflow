@@ -85,6 +85,11 @@ export function LocationSelector({
     onCityChange('');
   };
 
+  // Get country name from isoCode for display
+  const getCountryName = (isoCode: string) => {
+    return countries.find(c => c.isoCode === isoCode)?.name || isoCode;
+  };
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <div className="space-y-2">
@@ -92,12 +97,14 @@ export function LocationSelector({
           Country <span className="text-destructive">*</span>
         </Label>
         <Select
-          value={country}
+          value={country || ''}
           onValueChange={handleCountryChange}
           disabled={disabled}
         >
           <SelectTrigger id="country" className={error?.country ? 'border-destructive' : ''}>
-            <SelectValue placeholder="Select country" />
+            <SelectValue placeholder="Select country">
+              {country ? getCountryName(country) : 'Select country'}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent className="max-h-[200px]">
             {countries.map((c) => (
@@ -117,7 +124,7 @@ export function LocationSelector({
           State <span className="text-destructive">*</span>
         </Label>
         <Select
-          value={state}
+          value={state || ''}
           onValueChange={handleStateChange}
           disabled={disabled || !country}
         >
@@ -126,7 +133,7 @@ export function LocationSelector({
           </SelectTrigger>
           <SelectContent className="max-h-[200px]">
             {states.map((s) => (
-              <SelectItem key={s.isoCode} value={s.isoCode}>
+              <SelectItem key={s.isoCode} value={s.name}>
                 {s.name}
               </SelectItem>
             ))}
@@ -142,7 +149,7 @@ export function LocationSelector({
           City <span className="text-destructive">*</span>
         </Label>
         <Select
-          value={city}
+          value={city || ''}
           onValueChange={onCityChange}
           disabled={disabled || !state}
         >
