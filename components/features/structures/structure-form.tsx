@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { FormInput, FormTextarea, FormSelect } from '@/components/ui/form-input';
 import { LocationSelector } from '@/components/ui/location-selector';
@@ -33,7 +33,7 @@ export function StructureForm({
     state: initialData?.state || '',
     zipCode: initialData?.zipCode || '',
     county: initialData?.county || '',
-    country: initialData?.country || 'US',
+    country: initialData?.country || '',
     phone: initialData?.phone || '',
     phoneExtension: initialData?.phoneExtension || '',
     fax: initialData?.fax || '',
@@ -46,22 +46,23 @@ export function StructureForm({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const validate = () => {
+  // Real-time validation - run whenever form data changes
+  useEffect(() => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.title.trim()) {
+    if (formData.title.trim() === '') {
       newErrors.title = 'Title is required';
     }
-    if (!formData.code.trim()) {
+    if (formData.code.trim() === '') {
       newErrors.code = 'Code is required';
     }
-    if (!formData.license.trim()) {
+    if (formData.license.trim() === '') {
       newErrors.license = 'License is required';
     }
     if (!formData.licenseExpiry) {
       newErrors.licenseExpiry = 'License expiry is required';
     }
-    if (!formData.address.trim()) {
+    if (formData.address.trim() === '') {
       newErrors.address = 'Address is required';
     }
     if (!formData.country) {
@@ -73,23 +74,26 @@ export function StructureForm({
     if (!formData.city) {
       newErrors.city = 'City is required';
     }
-    if (!formData.zipCode.trim()) {
+    if (formData.zipCode.trim() === '') {
       newErrors.zipCode = 'ZIP code is required';
     }
-    if (!formData.phone.trim()) {
+    if (formData.phone.trim() === '') {
       newErrors.phone = 'Phone is required';
     }
-    if (!formData.email.trim()) {
+    if (formData.email.trim() === '') {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email';
     }
-    if (!formData.county.trim()) {
+    if (formData.county.trim() === '') {
       newErrors.county = 'County is required';
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  }, [formData]);
+
+  const validate = () => {
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {

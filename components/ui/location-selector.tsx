@@ -92,7 +92,7 @@ export function LocationSelector({
           Country <span className="text-destructive">*</span>
         </Label>
         <Select
-          value={country}
+          value={country || ''}
           onValueChange={handleCountryChange}
           disabled={disabled}
         >
@@ -117,7 +117,7 @@ export function LocationSelector({
           State <span className="text-destructive">*</span>
         </Label>
         <Select
-          value={state}
+          value={state || ''}
           onValueChange={handleStateChange}
           disabled={disabled || !country}
         >
@@ -126,7 +126,7 @@ export function LocationSelector({
           </SelectTrigger>
           <SelectContent className="max-h-[200px]">
             {states.map((s) => (
-              <SelectItem key={s.isoCode} value={s.isoCode}>
+              <SelectItem key={s.isoCode} value={s.name}>
                 {s.name}
               </SelectItem>
             ))}
@@ -142,7 +142,7 @@ export function LocationSelector({
           City <span className="text-destructive">*</span>
         </Label>
         <Select
-          value={city}
+          value={city || ''}
           onValueChange={onCityChange}
           disabled={disabled || !state}
         >

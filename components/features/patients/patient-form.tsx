@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { FormInput, FormTextarea, FormSelect } from '@/components/ui/form-input';
 import { PATIENT_STATUS_OPTIONS, GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from '@/lib/constants/index';
@@ -35,16 +35,17 @@ export function PatientForm({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const validate = () => {
+  // Real-time validation
+  useEffect(() => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.firstName.trim()) {
+    if (formData.firstName.trim() === '') {
       newErrors.firstName = 'First name is required';
     }
-    if (!formData.lastName.trim()) {
+    if (formData.lastName.trim() === '') {
       newErrors.lastName = 'Last name is required';
     }
-    if (!formData.email.trim()) {
+    if (formData.email.trim() === '') {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email';
@@ -52,7 +53,7 @@ export function PatientForm({
     if (!formData.age || isNaN(parseInt(formData.age)) || parseInt(formData.age) < 0) {
       newErrors.age = 'Please enter a valid age';
     }
-    if (!formData.contactNumber.trim()) {
+    if (formData.contactNumber.trim() === '') {
       newErrors.contactNumber = 'Contact number is required';
     }
     if (!formData.admissionDate) {
@@ -60,7 +61,10 @@ export function PatientForm({
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  }, [formData]);
+
+  const validate = () => {
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {

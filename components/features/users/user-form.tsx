@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FormInput, FormTextarea, FormSelect } from '@/components/ui/form-input';
@@ -45,16 +45,17 @@ export function UserForm({
 
   const isEditMode = Boolean(initialData?.firstName);
 
-  const validate = () => {
+  // Real-time validation
+  useEffect(() => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.firstName.trim()) {
+    if (formData.firstName.trim() === '') {
       newErrors.firstName = 'First name is required';
     }
-    if (!formData.lastName.trim()) {
+    if (formData.lastName.trim() === '') {
       newErrors.lastName = 'Last name is required';
     }
-    if (!formData.email.trim()) {
+    if (formData.email.trim() === '') {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email';
@@ -70,7 +71,7 @@ export function UserForm({
     if (!formData.age || isNaN(parseInt(formData.age)) || parseInt(formData.age) < 18) {
       newErrors.age = 'Please enter a valid age (18+)';
     }
-    if (!formData.contactNumber.trim()) {
+    if (formData.contactNumber.trim() === '') {
       newErrors.contactNumber = 'Contact number is required';
     }
     if (!formData.admissionDate) {
@@ -78,7 +79,10 @@ export function UserForm({
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  }, [formData, isEditMode]);
+
+  const validate = () => {
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {

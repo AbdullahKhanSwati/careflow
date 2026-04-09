@@ -53,7 +53,7 @@ export function BranchForm({
         state: initialData?.state || '',
         zipCode: initialData?.zipCode || '',
         county: initialData?.county || '',
-        country: initialData?.country || 'United States',
+        country: initialData?.country || '',
         phone: initialData?.phone || '',
         phoneExtension: initialData?.phoneExtension || '',
         email: initialData?.email || '',
