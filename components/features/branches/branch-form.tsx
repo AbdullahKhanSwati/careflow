@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/form';
 import { mockStructures } from '@/lib/mock-data';
 import { branchFormSchema } from '@/lib/validations/branches';
-import { BRANCH_STATUS_OPTIONS, BRANCH_TYPE_OPTIONS, TIMEZONE_OPTIONS } from '@/lib/constants';
+import { BRANCH_STATUS_OPTIONS, BRANCH_TYPE_OPTIONS, TIMEZONE_OPTIONS } from '@/lib/constants/index';
 import type { Branch } from '@/types';
 
 interface BranchFormProps {

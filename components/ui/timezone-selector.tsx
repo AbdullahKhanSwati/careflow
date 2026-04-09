@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { US_TIMEZONE_OPTIONS } from '@/lib/constants';
+import { US_TIMEZONE_OPTIONS } from '@/lib/constants/index';
 
 interface TimezoneSelectorProps {
   value: string;

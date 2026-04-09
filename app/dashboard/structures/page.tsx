@@ -16,7 +16,7 @@ import { StructureForm } from '@/components/features/structures/structure-form';
 import { structuresColumns } from '@/components/features/structures/structures-columns';
 import { mockStructures } from '@/lib/mock-data';
 import { useToast } from '@/components/providers/toast-provider';
-import { STATUS_OPTIONS, FACILITY_TYPE_OPTIONS } from '@/lib/constants';
+import { STATUS_OPTIONS, FACILITY_TYPE_OPTIONS } from '@/lib/constants/index';
 import { cn } from '@/lib/utils';
 import type { Structure, FilterState } from '@/types';
 

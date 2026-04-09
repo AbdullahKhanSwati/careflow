@@ -19,7 +19,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { CardSkeleton } from '@/components/ui/skeleton-loader';
 import { AdvancedFilter } from '@/components/ui/advanced-filter';
 import { mockBranches, mockStructures } from '@/lib/mock-data';
-import { STATUS_OPTIONS, FACILITY_TYPE_OPTIONS } from '@/lib/constants';
+import { STATUS_OPTIONS, FACILITY_TYPE_OPTIONS } from '@/lib/constants/index';
 import { cn } from '@/lib/utils';
 import type { Branch, TableColumn, FilterState } from '@/types';
 
@@ -259,56 +259,6 @@ export default function BranchesPage() {
                         <span className="font-medium">{branch.userCount}</span>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      ) : (
-        <DataTable
-          columns={branchColumns}
-          data={filteredBranches}
-          keyField="id"
-          onRowClick={handleRowClick}
-          emptyTitle="No branches found"
-          emptyDescription="There are no branches matching your criteria"
-          emptyIcon="GitBranch"
-        />
-      )}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary transition-colors">
-                    <GitBranch className="h-6 w-6 text-primary group-hover:text-primary-foreground transition-colors" />
-                  </div>
-                  <StatusBadge status={branch.status} />
-                </div>
-                <h3 className="font-semibold text-foreground mb-1 truncate">
-                  {branch.name}
-                </h3>
-                <div className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {branch.city}
-                </div>
-                {structure && (
-                  <p className="text-xs text-muted-foreground mb-4">
-                    Part of <span className="font-medium">{structure.name}</span>
-                  </p>
-                )}
-                <div className="flex items-center gap-6 pt-4 border-t border-border">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium text-foreground">
-                      {branch.patientCount}
-                    </span>
-                    <span className="text-xs text-muted-foreground">patients</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <UserCog className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium text-foreground">
-                      {branch.userCount}
-                    </span>
-                    <span className="text-xs text-muted-foreground">staff</span>
                   </div>
                 </div>
               </Link>

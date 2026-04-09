@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { FormInput, FormTextarea, FormSelect } from '@/components/ui/form-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { STAFF_STATUS_OPTIONS, ROLE_OPTIONS, GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from '@/lib/constants';
+import { STAFF_STATUS_OPTIONS, ROLE_OPTIONS, GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from '@/lib/constants/index';
 import type { User, StaffStatus, UserRole, Gender, MaritalStatus } from '@/types';
 
 interface UserFormProps {

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { FormInput, FormTextarea, FormSelect } from '@/components/ui/form-input';
-import { PATIENT_STATUS_OPTIONS, GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from '@/lib/constants';
+import { PATIENT_STATUS_OPTIONS, GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from '@/lib/constants/index';
 import type { Patient, PatientStatus, Gender, MaritalStatus } from '@/types';
 
 interface PatientFormProps {

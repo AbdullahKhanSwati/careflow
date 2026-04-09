@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { FormInput, FormTextarea, FormSelect } from '@/components/ui/form-input';
 import { LocationSelector } from '@/components/ui/location-selector';
 import { TimezoneSelector } from '@/components/ui/timezone-selector';
-import { STATUS_OPTIONS, FACILITY_TYPE_OPTIONS } from '@/lib/constants';
+import { STATUS_OPTIONS, FACILITY_TYPE_OPTIONS } from '@/lib/constants/index';
 import type { Structure, Status, FacilityType } from '@/types';
 
 interface StructureFormProps {
