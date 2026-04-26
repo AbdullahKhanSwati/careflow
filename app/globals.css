@@ -145,15 +145,3 @@
     @apply bg-background text-foreground;
   }
 }
-
-@layer utilities {
-  /* Hide scrollbars while preserving scroll. Used on the sidebar so its tall
-     content scrolls without ever showing a track. */
-  .scrollbar-hide {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-}

@@ -1,191 +1,167 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Grid3X3, List, Mail, MapPin, Phone } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import {
+  UserCog,
+  Phone,
+  Mail,
+  Search,
+  Grid3X3,
+  List,
+  MapPin,
+} from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { DataTable } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
-import { useNodes } from '@/components/providers/node-provider';
-import { mockUsers } from '@/lib/mock-data';
-import {
-  ROLE_OPTIONS,
-  STATUS_OPTIONS,
-  withAllOption,
-} from '@/lib/constants';
-import { NavigationBreadcrumb } from '@/components/shared/navigation-breadcrumb';
-import { FilterBar } from '@/components/shared/filter-bar';
+import { CardSkeleton } from '@/components/ui/skeleton-loader';
+import { mockUsers, mockBranches } from '@/lib/mock-data';
 import { cn } from '@/lib/utils';
-import type { TableColumn, User } from '@/types';
+import type { User, TableColumn } from '@/types';
+
+const userColumns: TableColumn<User>[] = [
+  {
+    key: 'fullName',
+    header: 'Staff Member',
+    sortable: true,
+    render: (_, row) => (
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+          <span className="text-sm font-medium text-accent">
+            {row.fullName.charAt(0)}
+          </span>
+        </div>
+        <div className="min-w-0">
+          <p className="font-medium text-foreground truncate">{row.fullName}</p>
+          <p className="text-sm text-muted-foreground">{row.email}</p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    key: 'branchId',
+    header: 'Branch',
+    sortable: true,
+    render: (value) => {
+      const branch = mockBranches.find((b) => b.id === value);
+      return (
+        <span className="text-sm text-muted-foreground">
+          {branch?.name || 'Unknown'}
+        </span>
+      );
+    },
+  },
+  {
+    key: 'phone',
+    header: 'Phone',
+    sortable: false,
+  },
+  {
+    key: 'role',
+    header: 'Role',
+    sortable: true,
+    render: (value) => <StatusBadge status={value as 'admin' | 'staff'} />,
+  },
+  {
+    key: 'status',
+    header: 'Status',
+    sortable: true,
+    render: (value) => <StatusBadge status={value as 'active' | 'inactive' | 'pending'} />,
+  },
+];
 
 export default function StaffPage() {
-  const { selectedNode, scopeIds, getNode } = useNodes();
-  const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [view, setView] = useState<'grid' | 'list'>('list');
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const inScope = useMemo(
-    () => mockUsers.filter((u) => scopeIds.has(u.nodeId)),
-    [scopeIds]
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setUsers(mockUsers);
+      setIsLoading(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const filteredUsers = users.filter(
+    (user) =>
+      user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return inScope.filter((u) => {
-      if (roleFilter && u.role !== roleFilter) return false;
-      if (statusFilter && u.status !== statusFilter) return false;
-      if (!q) return true;
-      return [u.fullName, u.email, u.phone]
-        .join(' ')
-        .toLowerCase()
-        .includes(q);
-    });
-  }, [inScope, search, roleFilter, statusFilter]);
-
-  if (!selectedNode) {
-    return (
-      <EmptyState
-        icon="AlertCircle"
-        title="No node selected"
-        description="Pick a node from the sidebar."
-      />
-    );
-  }
-
-  const handleReset = () => {
-    setSearch('');
-    setRoleFilter('');
-    setStatusFilter('');
-  };
-
-  const columns: TableColumn<User>[] = [
-    {
-      key: 'fullName',
-      header: 'Staff Member',
-      sortable: true,
-      render: (_, row) => (
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
-            <span className="text-sm font-medium text-accent">
-              {row.fullName.charAt(0)}
-            </span>
-          </div>
-          <div className="min-w-0">
-            <p className="font-medium text-foreground truncate">{row.fullName}</p>
-            <p className="text-sm text-muted-foreground">{row.email}</p>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'nodeId',
-      header: 'Attached to',
-      sortable: true,
-      render: (value) => {
-        const node = getNode(String(value));
-        return (
-          <span className="text-sm text-muted-foreground">
-            {node?.name ?? 'Unknown'}
-          </span>
-        );
-      },
-    },
-    { key: 'phone', header: 'Phone', sortable: false },
-    {
-      key: 'role',
-      header: 'Role',
-      sortable: true,
-      render: (value) => <StatusBadge status={value as User['role']} />,
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      sortable: true,
-      render: (value) => <StatusBadge status={value as User['status']} />,
-    },
-  ];
 
   return (
     <div className="space-y-6">
-      <NavigationBreadcrumb />
-
       <PageHeader
-        title="Staff"
-        description={`Staff attached to ${selectedNode.name} and every sub-node.`}
-      />
-
-      <FilterBar
-        search={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Search staff by name, email, phone..."
-        selects={[
-          {
-            id: 'role',
-            label: 'Role',
-            value: roleFilter,
-            onChange: setRoleFilter,
-            options: withAllOption(ROLE_OPTIONS),
-          },
-          {
-            id: 'status',
-            label: 'Status',
-            value: statusFilter,
-            onChange: setStatusFilter,
-            options: withAllOption(STATUS_OPTIONS),
-          },
+        title="All Staff"
+        description="View and manage all staff members across your healthcare network"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Staff' },
         ]}
-        onReset={handleReset}
-        rightSlot={
-          <div className="flex items-center gap-1">
-            <Button
-              variant={view === 'list' ? 'default' : 'outline'}
-              size="icon-sm"
-              onClick={() => setView('list')}
-              aria-label="List view"
-            >
-              <List className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={view === 'grid' ? 'default' : 'outline'}
-              size="icon-sm"
-              onClick={() => setView('grid')}
-              aria-label="Grid view"
-            >
-              <Grid3X3 className="h-4 w-4" />
-            </Button>
-          </div>
-        }
-        hint={
-          <span>
-            Showing <strong>{filtered.length}</strong> of {inScope.length} staff
-          </span>
-        }
       />
 
-      {filtered.length === 0 ? (
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search staff..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'outline'}
+            size="icon"
+            onClick={() => setViewMode('grid')}
+          >
+            <Grid3X3 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'outline'}
+            size="icon"
+            onClick={() => setViewMode('list')}
+          >
+            <List className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+      ) : filteredUsers.length === 0 ? (
         <div className="rounded-xl border border-border bg-card">
           <EmptyState
             icon="UserCog"
             title="No staff found"
             description={
-              inScope.length === 0
-                ? `No staff are attached inside ${selectedNode.name}.`
-                : 'Adjust the filters or clear them to see more.'
+              searchQuery
+                ? 'Try adjusting your search criteria'
+                : 'There are no staff members registered yet'
             }
           />
         </div>
-      ) : view === 'grid' ? (
+      ) : viewMode === 'grid' ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((user) => {
-            const node = getNode(user.nodeId);
+          {filteredUsers.map((user) => {
+            const branch = mockBranches.find((b) => b.id === user.branchId);
             return (
               <div
                 key={user.id}
                 className={cn(
                   'group rounded-xl border border-border bg-card p-5',
-                  'hover:border-accent/30 hover:shadow-md transition-all'
+                  'hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5',
+                  'transition-all duration-300'
                 )}
               >
                 <div className="flex items-start justify-between mb-4">
@@ -194,7 +170,9 @@ export default function StaffPage() {
                       {user.fullName.charAt(0)}
                     </span>
                   </div>
-                  <StatusBadge status={user.role} />
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={user.role} />
+                  </div>
                 </div>
                 <h3 className="font-semibold text-foreground mb-1">
                   {user.fullName}
@@ -209,10 +187,10 @@ export default function StaffPage() {
                     <Phone className="h-4 w-4" />
                     {user.phone}
                   </div>
-                  {node && (
+                  {branch && (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <MapPin className="h-4 w-4" />
-                      {node.name}
+                      {branch.name}
                     </div>
                   )}
                 </div>
@@ -229,11 +207,11 @@ export default function StaffPage() {
         </div>
       ) : (
         <DataTable
-          columns={columns}
-          data={filtered}
+          columns={userColumns}
+          data={filteredUsers}
           keyField="id"
-          emptyTitle="No staff"
-          emptyDescription="No staff in the selected scope."
+          emptyTitle="No staff found"
+          emptyDescription="There are no staff members matching your criteria"
           emptyIcon="UserCog"
         />
       )}

@@ -1,16 +1,13 @@
 'use client';
 
 import {
-  Activity,
   Building2,
   GitBranch,
-  MapPin,
-  Sparkles,
-  Stethoscope,
-  TrendingDown,
-  TrendingUp,
-  UserCog,
   Users,
+  UserCog,
+  TrendingUp,
+  TrendingDown,
+  Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { StatCard as StatCardType } from '@/types';
@@ -21,9 +18,6 @@ const iconMap: Record<string, React.ElementType> = {
   Users,
   UserCog,
   Activity,
-  MapPin,
-  Sparkles,
-  Stethoscope,
 };
 
 interface StatCardProps {

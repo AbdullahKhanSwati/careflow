@@ -1,15 +1,14 @@
-export * from './nodes';
+export * from './structures';
+export * from './branches';
 export * from './patients';
 export * from './users';
-export * from './providers';
-export * from './medications';
 
 import type { StatCard } from '@/types';
 
 export const dashboardStats: StatCard[] = [
   {
     id: 'stat-1',
-    title: 'Departments',
+    title: 'Total Structures',
     value: 5,
     change: 25,
     changeType: 'increase',
@@ -17,16 +16,16 @@ export const dashboardStats: StatCard[] = [
   },
   {
     id: 'stat-2',
-    title: 'Branches',
-    value: 7,
+    title: 'Active Branches',
+    value: 10,
     change: 12,
     changeType: 'increase',
-    icon: 'MapPin',
+    icon: 'GitBranch',
   },
   {
     id: 'stat-3',
-    title: 'Patients',
-    value: 12,
+    title: 'Total Patients',
+    value: '2,028',
     change: 8,
     changeType: 'increase',
     icon: 'Users',
@@ -34,9 +33,9 @@ export const dashboardStats: StatCard[] = [
   {
     id: 'stat-4',
     title: 'Staff Members',
-    value: 13,
+    value: 285,
     change: 3,
-    changeType: 'increase',
+    changeType: 'decrease',
     icon: 'UserCog',
   },
 ];
@@ -52,29 +51,29 @@ export const recentActivity = [
   {
     id: 'act-2',
     action: 'Staff member added',
-    details: 'Thomas Blake joined Manhattan Medical Center',
+    details: 'Thomas Blake joined Brooklyn Health Hub',
     time: '1 hour ago',
     type: 'user',
   },
   {
     id: 'act-3',
     action: 'Branch status updated',
-    details: 'Brooklyn Health Hub set to active',
+    details: 'Sacramento Health Center set to pending',
     time: '3 hours ago',
-    type: 'location',
+    type: 'branch',
   },
   {
     id: 'act-4',
-    action: 'Department created',
-    details: 'Specialty Care added under Clinical Services',
+    action: 'Structure created',
+    details: 'Florida Region added to the system',
     time: '1 day ago',
-    type: 'department',
+    type: 'structure',
   },
   {
     id: 'act-5',
-    action: 'Program updated',
-    details: 'Mobile Outreach LA schedule revised',
+    action: 'Patient discharge',
+    details: 'William Davis completed treatment',
     time: '2 days ago',
-    type: 'program',
+    type: 'patient',
   },
 ];

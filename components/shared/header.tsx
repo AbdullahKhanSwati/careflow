@@ -1,23 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import {
-  Bell,
-  ChevronDown,
-  LogOut,
-  Menu,
-  Monitor,
-  Moon,
-  Settings,
-  Sun,
-  User,
-} from 'lucide-react';
+import { Bell, Sun, Moon, Monitor, ChevronDown, User, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/components/providers/theme-provider';
-import { useNodes } from '@/components/providers/node-provider';
-import { NodeIcon } from '@/components/features/nodes/node-icon';
-import { NODE_TYPE_LABEL, getNodeColor } from '@/lib/constants/node-colors';
 import type { Theme } from '@/types';
 
 const themeOptions: { value: Theme; label: string; icon: React.ElementType }[] = [
@@ -26,18 +13,14 @@ const themeOptions: { value: Theme; label: string; icon: React.ElementType }[] =
   { value: 'system', label: 'System', icon: Monitor },
 ];
 
-interface HeaderProps {
-  onMenuToggle?: () => void;
-}
-
-export function Header({ onMenuToggle }: HeaderProps) {
+export function Header() {
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const { selectedNode } = useNodes();
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const themeRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
+  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (themeRef.current && !themeRef.current.contains(event.target as Node)) {
@@ -47,71 +30,47 @@ export function Header({ onMenuToggle }: HeaderProps) {
         setShowProfileMenu(false);
       }
     }
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const ThemeIcon = resolvedTheme === 'dark' ? Moon : Sun;
-  const tokens = selectedNode
-    ? getNodeColor(selectedNode.type, selectedNode.level)
-    : null;
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-6">
-      <div className="flex items-center gap-3 min-w-0">
-        <button
-          type="button"
-          onClick={onMenuToggle}
-          aria-label="Toggle menu"
-          className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
-
-        {selectedNode && tokens && (
-          <div
-            className={cn(
-              'flex items-center gap-2.5 rounded-lg border px-3 py-1.5',
-              'border-border bg-card min-w-0'
-            )}
-          >
-            <NodeIcon
-              type={selectedNode.type}
-              level={selectedNode.level}
-              size="xs"
-            />
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none">
-                {NODE_TYPE_LABEL[selectedNode.type]}
-              </p>
-              <p className="text-sm font-medium text-foreground truncate max-w-[200px] sm:max-w-[280px]">
-                {selectedNode.name}
-              </p>
-            </div>
-          </div>
-        )}
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
+      <div className="flex items-center gap-4">
+        <h2 className="text-lg font-semibold text-foreground hidden sm:block">
+          Agency Panel
+        </h2>
       </div>
 
-      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+      <div className="flex items-center gap-2">
+        {/* Notifications */}
         <button
-          aria-label="Notifications"
           className={cn(
             'relative rounded-lg p-2.5',
             'text-muted-foreground hover:text-foreground hover:bg-muted',
-            'transition-colors'
+            'transition-colors duration-200'
           )}
         >
           <Bell className="h-5 w-5" />
           <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-destructive" />
+          <span className="sr-only">Notifications</span>
         </button>
 
+        {/* Theme Switcher */}
         <div ref={themeRef} className="relative">
           <button
             onClick={() => setShowThemeMenu(!showThemeMenu)}
-            aria-label="Toggle theme"
-            className="rounded-lg p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className={cn(
+              'rounded-lg p-2.5',
+              'text-muted-foreground hover:text-foreground hover:bg-muted',
+              'transition-colors duration-200'
+            )}
           >
             <ThemeIcon className="h-5 w-5" />
+            <span className="sr-only">Toggle theme</span>
           </button>
 
           {showThemeMenu && (
@@ -126,7 +85,8 @@ export function Header({ onMenuToggle }: HeaderProps) {
                       setShowThemeMenu(false);
                     }}
                     className={cn(
-                      'flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
+                      'flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm',
+                      'transition-colors duration-150',
                       theme === option.value
                         ? 'bg-primary/10 text-primary'
                         : 'text-popover-foreground hover:bg-muted'
@@ -141,10 +101,14 @@ export function Header({ onMenuToggle }: HeaderProps) {
           )}
         </div>
 
+        {/* Profile Dropdown */}
         <div ref={profileRef} className="relative">
           <button
             onClick={() => setShowProfileMenu(!showProfileMenu)}
-            className="flex items-center gap-2 rounded-lg p-1.5 sm:pr-3 hover:bg-muted transition-colors"
+            className={cn(
+              'flex items-center gap-2 rounded-lg p-1.5 pr-3',
+              'hover:bg-muted transition-colors duration-200'
+            )}
           >
             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
               <User className="h-4 w-4 text-primary" />

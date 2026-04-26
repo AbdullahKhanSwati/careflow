@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { FormInput, FormTextarea, FormSelect } from '@/components/ui/form-input';
 import { STATUS_OPTIONS, ROLE_OPTIONS } from '@/lib/constants';
-import type { Status, User, UserRole } from '@/types';
+import type { User } from '@/types';
 
 interface UserFormProps {
   initialData?: Partial<User>;
-  onSubmit: (data: Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'nodeId' | 'avatar'>) => void;
+  onSubmit: (data: Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'branchId' | 'avatar'>) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -99,18 +99,14 @@ export function UserForm({
         <FormSelect
           label="Role"
           value={formData.role}
-          onChange={(e) =>
-            setFormData({ ...formData, role: e.target.value as UserRole })
-          }
+          onChange={(e) => setFormData({ ...formData, role: e.target.value })}
           options={ROLE_OPTIONS}
           required
         />
         <FormSelect
           label="Status"
           value={formData.status}
-          onChange={(e) =>
-            setFormData({ ...formData, status: e.target.value as Status })
-          }
+          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
           options={STATUS_OPTIONS}
           required
         />

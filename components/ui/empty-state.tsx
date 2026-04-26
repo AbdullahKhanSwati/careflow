@@ -1,16 +1,13 @@
 'use client';
 
 import {
-  AlertCircle,
-  Building2,
   FileSearch,
-  FolderOpen,
-  GitBranch,
-  Inbox,
-  MapPin,
-  Sparkles,
-  UserCog,
   Users,
+  Building2,
+  GitBranch,
+  FolderOpen,
+  Inbox,
+  AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -23,9 +20,6 @@ const iconMap: Record<string, React.ElementType> = {
   FolderOpen,
   Inbox,
   AlertCircle,
-  MapPin,
-  Sparkles,
-  UserCog,
 };
 
 interface EmptyStateProps {
