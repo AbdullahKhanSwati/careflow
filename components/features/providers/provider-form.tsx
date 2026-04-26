@@ -1,376 +1,513 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { FormInput, FormTextarea, FormSelect } from '@/components/ui/form-input';
-import { LocationSelector } from '@/components/ui/location-selector';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
-  PROVIDER_TYPE_OPTIONS,
-  PROVIDER_SPECIALTY_OPTIONS,
-  PROVIDER_STATUS_OPTIONS,
+  FormInput,
+  FormSelect,
+  FormTextarea,
+} from '@/components/ui/form-input';
+import {
+  CITIES_BY_STATE,
+  COUNTRY_OPTIONS,
   GENDER_OPTIONS,
-} from '@/lib/constants/index';
-import type { Provider, ProviderType, ProviderSpecialty, Status, Gender } from '@/types';
+  PROVIDER_TYPE_OPTIONS,
+  SPECIALTY_OPTIONS,
+  STATES_BY_COUNTRY,
+  STATUS_OPTIONS,
+} from '@/lib/constants';
+import type {
+  Gender,
+  Provider,
+  ProviderSpecialty,
+  ProviderType,
+  Status,
+} from '@/types';
 
 interface ProviderFormProps {
   initialData?: Partial<Provider>;
-  onSubmit: (data: Omit<Provider, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  /** When supplied, the form shows an "Attached to" picker so the new
+   *  provider can be slotted into a node in the hierarchy. */
+  nodeOptions?: { value: string; label: string }[];
+  onSubmit: (
+    data: Omit<Provider, 'id' | 'createdAt' | 'updatedAt' | 'avatar'>
+  ) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
 
+interface FormState {
+  providerType: ProviderType;
+  nodeId: string;
+
+  // Individual
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  gender: Gender;
+
+  // Organization
+  organizationName: string;
+
+  specialty: ProviderSpecialty;
+  status: Status;
+
+  // Professional
+  npiNumber: string;
+  licenseNumber: string;
+  licenseExpiry: string;
+
+  // Contact
+  phone: string;
+  extension: string;
+  fax: string;
+  email: string;
+
+  // Address
+  addressLine1: string;
+  addressLine2: string;
+  country: string;
+  state: string;
+  city: string;
+  zipCode: string;
+  isPrimaryLocation: boolean;
+
+  notes: string;
+}
+
+/**
+ * Healthcare provider registration form. Toggles between Individual and
+ * Organization shapes; address pickers cascade country → state → city.
+ */
 export function ProviderForm({
   initialData,
+  nodeOptions,
   onSubmit,
   onCancel,
-  isLoading = false,
+  isLoading,
 }: ProviderFormProps) {
-  const [formData, setFormData] = useState({
-    firstName: initialData?.firstName || '',
-    middleName: initialData?.middleName || '',
-    lastName: initialData?.lastName || '',
-    providerType: initialData?.providerType || 'individual',
-    npiNumber: initialData?.npiNumber || '',
-    specialty: initialData?.specialty || 'general_practice',
-    licenseNumber: initialData?.licenseNumber || '',
-    licenseExpiry: initialData?.licenseExpiry || '',
-    gender: initialData?.gender || 'male',
-    phone: initialData?.phone || '',
-    phoneExtension: initialData?.phoneExtension || '',
-    fax: initialData?.fax || '',
-    email: initialData?.email || '',
-    address: initialData?.address || '',
-    address2: initialData?.address2 || '',
-    city: initialData?.city || '',
-    state: initialData?.state || '',
-    zipCode: initialData?.zipCode || '',
-    country: initialData?.country || '',
-    primaryLocation: initialData?.primaryLocation || false,
-    status: initialData?.status || 'active',
-    notes: initialData?.notes || '',
+  const [data, setData] = useState<FormState>({
+    providerType: (initialData?.providerType ?? 'individual') as ProviderType,
+    nodeId: initialData?.nodeId ?? nodeOptions?.[0]?.value ?? '',
+
+    firstName: initialData?.firstName ?? '',
+    middleName: initialData?.middleName ?? '',
+    lastName: initialData?.lastName ?? '',
+    gender: (initialData?.gender ?? 'male') as Gender,
+
+    organizationName: initialData?.organizationName ?? initialData?.fullName ?? '',
+
+    specialty: (initialData?.specialty ?? 'general') as ProviderSpecialty,
+    status: (initialData?.status ?? 'active') as Status,
+
+    npiNumber: initialData?.npiNumber ?? '',
+    licenseNumber: initialData?.licenseNumber ?? '',
+    licenseExpiry: initialData?.licenseExpiry ?? '',
+
+    phone: initialData?.phone ?? '',
+    extension: initialData?.extension ?? '',
+    fax: initialData?.fax ?? '',
+    email: initialData?.email ?? '',
+
+    addressLine1: initialData?.addressLine1 ?? '',
+    addressLine2: initialData?.addressLine2 ?? '',
+    country: initialData?.country ?? '',
+    state: initialData?.state ?? '',
+    city: initialData?.city ?? '',
+    zipCode: initialData?.zipCode ?? '',
+    isPrimaryLocation: initialData?.isPrimaryLocation ?? false,
+
+    notes: initialData?.notes ?? '',
   });
-
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  // Validate only touched fields
-  useEffect(() => {
-    const newErrors: Record<string, string> = {};
-    
-    if (touched.firstName && formData.firstName.trim() === '') {
-      newErrors.firstName = 'First name is required';
-    }
-    if (touched.lastName && formData.lastName.trim() === '') {
-      newErrors.lastName = 'Last name is required';
-    }
-    if (touched.npiNumber && formData.npiNumber.trim() === '') {
-      newErrors.npiNumber = 'NPI number is required';
-    }
-    if (touched.email && formData.email.trim() === '') {
-      newErrors.email = 'Email is required';
-    } else if (touched.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
-    }
-    if (touched.phone && formData.phone.trim() === '') {
-      newErrors.phone = 'Phone is required';
-    }
-    if (touched.address && formData.address.trim() === '') {
-      newErrors.address = 'Address is required';
-    }
-    if (touched.country && !formData.country) {
-      newErrors.country = 'Country is required';
-    }
-    if (touched.state && !formData.state) {
-      newErrors.state = 'State is required';
-    }
-    if (touched.city && !formData.city) {
-      newErrors.city = 'City is required';
-    }
-    if (touched.zipCode && formData.zipCode.trim() === '') {
-      newErrors.zipCode = 'ZIP code is required';
+  const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
+    setData((prev) => ({ ...prev, [key]: value }));
+
+  // Country → state → city dependent options.
+  const stateOptions = useMemo(
+    () => (data.country ? (STATES_BY_COUNTRY[data.country] ?? []) : []),
+    [data.country]
+  );
+  const cityOptions = useMemo(
+    () => (data.state ? (CITIES_BY_STATE[data.state] ?? []) : []),
+    [data.state]
+  );
+
+  // Reset child selects when the parent changes.
+  const handleCountryChange = (country: string) =>
+    setData((p) => ({ ...p, country, state: '', city: '' }));
+  const handleStateChange = (state: string) =>
+    setData((p) => ({ ...p, state, city: '' }));
+
+  const isIndividual = data.providerType === 'individual';
+
+  const validate = () => {
+    const next: Record<string, string> = {};
+    if (nodeOptions && !data.nodeId) next.nodeId = 'Pick a branch or program';
+
+    if (isIndividual) {
+      if (!data.firstName.trim()) next.firstName = 'First name is required';
+      if (!data.lastName.trim()) next.lastName = 'Last name is required';
+    } else {
+      if (!data.organizationName.trim())
+        next.organizationName = 'Organization name is required';
     }
 
-    setErrors(newErrors);
-  }, [formData, touched]);
+    if (!data.npiNumber.trim()) next.npiNumber = 'NPI number is required';
+    else if (!/^\d{10}$/.test(data.npiNumber.trim()))
+      next.npiNumber = 'NPI must be 10 digits';
 
-  const handleFieldBlur = (field: string) => {
-    setTouched(prev => ({ ...prev, [field]: true }));
-  };
+    if (!data.phone.trim()) next.phone = 'Phone is required';
+    if (!data.email.trim()) next.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(data.email))
+      next.email = 'Please enter a valid email';
 
-  const validateAllFields = () => {
-    const allFields = ['firstName', 'lastName', 'npiNumber', 'email', 'phone', 'address', 'country', 'state', 'city', 'zipCode'];
-    setTouched(allFields.reduce((acc, field) => ({ ...acc, [field]: true }), {}));
-    
-    const newErrors: Record<string, string> = {};
-    if (formData.firstName.trim() === '') newErrors.firstName = 'First name is required';
-    if (formData.lastName.trim() === '') newErrors.lastName = 'Last name is required';
-    if (formData.npiNumber.trim() === '') newErrors.npiNumber = 'NPI number is required';
-    if (formData.email.trim() === '') newErrors.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Please enter a valid email';
-    if (formData.phone.trim() === '') newErrors.phone = 'Phone is required';
-    if (formData.address.trim() === '') newErrors.address = 'Address is required';
-    if (!formData.country) newErrors.country = 'Country is required';
-    if (!formData.state) newErrors.state = 'State is required';
-    if (!formData.city) newErrors.city = 'City is required';
-    if (formData.zipCode.trim() === '') newErrors.zipCode = 'ZIP code is required';
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    if (!data.country) next.country = 'Country is required';
+    if (!data.state) next.state = 'State is required';
+    if (!data.city) next.city = 'City is required';
+    if (!data.zipCode.trim()) next.zipCode = 'ZIP code is required';
+
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateAllFields()) {
-      onSubmit({
-        firstName: formData.firstName,
-        middleName: formData.middleName || undefined,
-        lastName: formData.lastName,
-        providerType: formData.providerType as ProviderType,
-        npiNumber: formData.npiNumber,
-        specialty: formData.specialty as ProviderSpecialty,
-        licenseNumber: formData.licenseNumber || undefined,
-        licenseExpiry: formData.licenseExpiry || undefined,
-        gender: formData.gender as Gender,
-        phone: formData.phone,
-        phoneExtension: formData.phoneExtension || undefined,
-        fax: formData.fax || undefined,
-        email: formData.email,
-        address: formData.address,
-        address2: formData.address2 || undefined,
-        city: formData.city,
-        state: formData.state,
-        zipCode: formData.zipCode,
-        country: formData.country,
-        primaryLocation: formData.primaryLocation,
-        status: formData.status as Status,
-        notes: formData.notes || undefined,
-      });
-    }
+    if (!validate()) return;
+
+    const fullName = isIndividual
+      ? [data.firstName.trim(), data.middleName.trim(), data.lastName.trim()]
+          .filter(Boolean)
+          .join(' ')
+      : data.organizationName.trim();
+
+    onSubmit({
+      providerType: data.providerType,
+      nodeId: data.nodeId,
+      fullName,
+      firstName: isIndividual ? data.firstName.trim() : undefined,
+      middleName:
+        isIndividual && data.middleName.trim()
+          ? data.middleName.trim()
+          : undefined,
+      lastName: isIndividual ? data.lastName.trim() : undefined,
+      organizationName: !isIndividual
+        ? data.organizationName.trim()
+        : undefined,
+      gender: isIndividual ? data.gender : undefined,
+      specialty: data.specialty,
+      status: data.status,
+
+      npiNumber: data.npiNumber.trim(),
+      licenseNumber: data.licenseNumber.trim(),
+      licenseExpiry: data.licenseExpiry || undefined,
+
+      phone: data.phone.trim(),
+      extension: data.extension.trim() || undefined,
+      fax: data.fax.trim() || undefined,
+      email: data.email.trim(),
+
+      addressLine1: data.addressLine1.trim() || undefined,
+      addressLine2: data.addressLine2.trim() || undefined,
+      country: data.country,
+      state: data.state,
+      city: data.city,
+      zipCode: data.zipCode.trim(),
+      isPrimaryLocation: data.isPrimaryLocation,
+
+      notes: data.notes,
+    });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Provider Type Selection */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground">Provider Type</h3>
+      {/* ── Provider Type ─────────────────────────────────────────────── */}
+      <Section title="Provider Type">
         <FormSelect
           label="Provider Type"
-          value={formData.providerType}
-          onChange={(e) => setFormData({ ...formData, providerType: e.target.value })}
+          value={data.providerType}
+          onChange={(e) =>
+            set('providerType', e.target.value as ProviderType)
+          }
           options={PROVIDER_TYPE_OPTIONS}
           required
         />
-      </div>
+        {nodeOptions && (
+          <FormSelect
+            label="Attached to"
+            value={data.nodeId}
+            onChange={(e) => set('nodeId', e.target.value)}
+            options={nodeOptions}
+            error={errors.nodeId}
+            required
+          />
+        )}
+      </Section>
 
-      {/* Basic Information */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground">Personal Information</h3>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* ── Personal / Organization ──────────────────────────────────── */}
+      {isIndividual ? (
+        <Section title="Personal Information">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <FormInput
+              label="First Name"
+              placeholder="e.g., John"
+              value={data.firstName}
+              onChange={(e) => set('firstName', e.target.value)}
+              error={errors.firstName}
+              required
+            />
+            <FormInput
+              label="Middle Name"
+              placeholder="e.g., Michael"
+              value={data.middleName}
+              onChange={(e) => set('middleName', e.target.value)}
+            />
+            <FormInput
+              label="Last Name"
+              placeholder="e.g., Smith"
+              value={data.lastName}
+              onChange={(e) => set('lastName', e.target.value)}
+              error={errors.lastName}
+              required
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <FormSelect
+              label="Gender"
+              value={data.gender}
+              onChange={(e) => set('gender', e.target.value as Gender)}
+              options={GENDER_OPTIONS}
+              required
+            />
+            <FormSelect
+              label="Specialty"
+              value={data.specialty}
+              onChange={(e) =>
+                set('specialty', e.target.value as ProviderSpecialty)
+              }
+              options={SPECIALTY_OPTIONS}
+              required
+            />
+            <FormSelect
+              label="Status"
+              value={data.status}
+              onChange={(e) => set('status', e.target.value as Status)}
+              options={STATUS_OPTIONS}
+              required
+            />
+          </div>
+        </Section>
+      ) : (
+        <Section title="Organization Information">
           <FormInput
-            label="First Name"
-            placeholder="e.g., John"
-            value={formData.firstName}
-            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-            onBlur={() => handleFieldBlur('firstName')}
-            error={errors.firstName}
+            label="Organization Name"
+            placeholder="e.g., West Coast Medical Group"
+            value={data.organizationName}
+            onChange={(e) => set('organizationName', e.target.value)}
+            error={errors.organizationName}
             required
           />
-          <FormInput
-            label="Middle Name"
-            placeholder="e.g., Michael"
-            value={formData.middleName}
-            onChange={(e) => setFormData({ ...formData, middleName: e.target.value })}
-          />
-          <FormInput
-            label="Last Name"
-            placeholder="e.g., Smith"
-            value={formData.lastName}
-            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-            onBlur={() => handleFieldBlur('lastName')}
-            error={errors.lastName}
-            required
-          />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <FormSelect
-            label="Gender"
-            value={formData.gender}
-            onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-            options={GENDER_OPTIONS}
-            required
-          />
-          <FormSelect
-            label="Specialty"
-            value={formData.specialty}
-            onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
-            options={PROVIDER_SPECIALTY_OPTIONS}
-            required
-          />
-          <FormSelect
-            label="Status"
-            value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-            options={PROVIDER_STATUS_OPTIONS}
-            required
-          />
-        </div>
-      </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormSelect
+              label="Specialty"
+              value={data.specialty}
+              onChange={(e) =>
+                set('specialty', e.target.value as ProviderSpecialty)
+              }
+              options={SPECIALTY_OPTIONS}
+              required
+            />
+            <FormSelect
+              label="Status"
+              value={data.status}
+              onChange={(e) => set('status', e.target.value as Status)}
+              options={STATUS_OPTIONS}
+              required
+            />
+          </div>
+        </Section>
+      )}
 
-      {/* Professional Information */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground">Professional Information</h3>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* ── Professional ─────────────────────────────────────────────── */}
+      <Section title="Professional Information">
+        <div className="grid gap-4 sm:grid-cols-3">
           <FormInput
             label="NPI Number"
             placeholder="e.g., 1234567890"
-            value={formData.npiNumber}
-            onChange={(e) => setFormData({ ...formData, npiNumber: e.target.value })}
-            onBlur={() => handleFieldBlur('npiNumber')}
+            inputMode="numeric"
+            value={data.npiNumber}
+            onChange={(e) => set('npiNumber', e.target.value)}
             error={errors.npiNumber}
             required
           />
           <FormInput
             label="License Number"
             placeholder="e.g., MD-12345"
-            value={formData.licenseNumber}
-            onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
+            value={data.licenseNumber}
+            onChange={(e) => set('licenseNumber', e.target.value)}
           />
           <FormInput
             label="License Expiry"
             type="date"
-            value={formData.licenseExpiry}
-            onChange={(e) => setFormData({ ...formData, licenseExpiry: e.target.value })}
+            value={data.licenseExpiry}
+            onChange={(e) => set('licenseExpiry', e.target.value)}
           />
         </div>
-      </div>
+      </Section>
 
-      {/* Contact Information */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground">Contact Information</h3>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* ── Contact ──────────────────────────────────────────────────── */}
+      <Section title="Contact Information">
+        <div className="grid gap-4 sm:grid-cols-3">
           <FormInput
             label="Phone"
             type="tel"
             placeholder="e.g., (555) 123-4567"
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            onBlur={() => handleFieldBlur('phone')}
+            value={data.phone}
+            onChange={(e) => set('phone', e.target.value)}
             error={errors.phone}
             required
           />
           <FormInput
             label="Extension"
             placeholder="e.g., 101"
-            value={formData.phoneExtension}
-            onChange={(e) => setFormData({ ...formData, phoneExtension: e.target.value })}
+            value={data.extension}
+            onChange={(e) => set('extension', e.target.value)}
           />
           <FormInput
             label="Fax"
             type="tel"
             placeholder="e.g., (555) 123-4568"
-            value={formData.fax}
-            onChange={(e) => setFormData({ ...formData, fax: e.target.value })}
+            value={data.fax}
+            onChange={(e) => set('fax', e.target.value)}
           />
         </div>
         <FormInput
           label="Email"
           type="email"
           placeholder="e.g., doctor@healthcare.com"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          onBlur={() => handleFieldBlur('email')}
+          value={data.email}
+          onChange={(e) => set('email', e.target.value)}
           error={errors.email}
           required
         />
-      </div>
+      </Section>
 
-      {/* Address Section */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground">Address</h3>
+      {/* ── Address ──────────────────────────────────────────────────── */}
+      <Section title="Address">
         <div className="grid gap-4 sm:grid-cols-2">
           <FormInput
             label="Address Line 1"
             placeholder="e.g., 123 Medical Plaza"
-            value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            onBlur={() => handleFieldBlur('address')}
-            error={errors.address}
-            required
+            value={data.addressLine1}
+            onChange={(e) => set('addressLine1', e.target.value)}
           />
           <FormInput
             label="Address Line 2"
             placeholder="e.g., Suite 200"
-            value={formData.address2}
-            onChange={(e) => setFormData({ ...formData, address2: e.target.value })}
+            value={data.addressLine2}
+            onChange={(e) => set('addressLine2', e.target.value)}
           />
         </div>
 
-        <LocationSelector
-          country={formData.country}
-          state={formData.state}
-          city={formData.city}
-          onCountryChange={(value) => {
-            setFormData({ ...formData, country: value });
-            handleFieldBlur('country');
-          }}
-          onStateChange={(value) => {
-            setFormData({ ...formData, state: value });
-            handleFieldBlur('state');
-          }}
-          onCityChange={(value) => {
-            setFormData({ ...formData, city: value });
-            handleFieldBlur('city');
-          }}
-          error={{
-            country: errors.country,
-            state: errors.state,
-            city: errors.city,
-          }}
-        />
+        <div className="grid gap-4 sm:grid-cols-3">
+          <FormSelect
+            label="Country"
+            value={data.country}
+            onChange={(e) => handleCountryChange(e.target.value)}
+            options={[
+              { value: '', label: 'Select country' },
+              ...COUNTRY_OPTIONS,
+            ]}
+            error={errors.country}
+            required
+          />
+          <FormSelect
+            label="State"
+            value={data.state}
+            onChange={(e) => handleStateChange(e.target.value)}
+            options={[
+              { value: '', label: 'Select state' },
+              ...stateOptions,
+            ]}
+            error={errors.state}
+            required
+            disabled={!data.country}
+          />
+          <FormSelect
+            label="City"
+            value={data.city}
+            onChange={(e) => set('city', e.target.value)}
+            options={[
+              { value: '', label: 'Select city' },
+              ...cityOptions,
+            ]}
+            error={errors.city}
+            required
+            disabled={!data.state}
+          />
+        </div>
 
         <FormInput
           label="ZIP Code"
           placeholder="e.g., 90001"
-          value={formData.zipCode}
-          onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
-          onBlur={() => handleFieldBlur('zipCode')}
+          value={data.zipCode}
+          onChange={(e) => set('zipCode', e.target.value)}
           error={errors.zipCode}
           required
         />
-      </div>
 
-      {/* Additional */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <input
-            type="checkbox"
-            id="primaryLocation"
-            checked={formData.primaryLocation}
-            onChange={(e) => setFormData({ ...formData, primaryLocation: e.target.checked })}
-            className="w-4 h-4 rounded border-input cursor-pointer"
+        <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer select-none">
+          <Checkbox
+            checked={data.isPrimaryLocation}
+            onCheckedChange={(checked) =>
+              set('isPrimaryLocation', checked === true)
+            }
           />
-          <label htmlFor="primaryLocation" className="text-sm font-medium cursor-pointer">
-            Primary Location
-          </label>
-        </div>
+          Primary Location
+        </label>
+      </Section>
 
+      {/* ── Notes ────────────────────────────────────────────────────── */}
+      <Section title="Notes">
         <FormTextarea
           label="Notes"
           placeholder="Additional notes (optional)"
-          value={formData.notes}
-          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-          rows={3}
+          value={data.notes}
+          onChange={(e) => set('notes', e.target.value)}
         />
-      </div>
+      </Section>
 
-      <div className="flex justify-end gap-3 pt-4">
+      <div className="flex justify-end gap-3 pt-4 border-t border-border">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? 'Saving...' : initialData?.firstName ? 'Update Provider' : 'Create Provider'}
+          {isLoading
+            ? 'Saving...'
+            : initialData
+              ? 'Update Provider'
+              : 'Add Provider'}
         </Button>
       </div>
     </form>
+  );
+}
+
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <fieldset className="space-y-4">
+      <legend className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+        {title}
+      </legend>
+      {children}
+    </fieldset>
   );
 }

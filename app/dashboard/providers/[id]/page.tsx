@@ -1,206 +1,266 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Edit2, Trash2 } from 'lucide-react';
-import Link from 'next/link';
+import { use, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  ArrowLeft,
+  BadgeCheck,
+  Briefcase,
+  Calendar,
+  Edit,
+  Mail,
+  Phone,
+  Stethoscope,
+  Trash2,
+} from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
-import { ProviderForm } from '@/components/features/providers/provider-form';
-import { mockProviders } from '@/lib/mock-data';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { EmptyState } from '@/components/ui/empty-state';
+import { useNodes } from '@/components/providers/node-provider';
 import { useToast } from '@/components/providers/toast-provider';
-import { PROVIDER_SPECIALTY_OPTIONS, PROVIDER_STATUS_OPTIONS } from '@/lib/constants/index';
+import { mockPatients, mockProviders } from '@/lib/mock-data';
+import { NavigationBreadcrumb } from '@/components/shared/navigation-breadcrumb';
+import {
+  DetailHeaderCard,
+  type DetailField,
+} from '@/components/shared/detail-header-card';
+import { NodeIcon } from '@/components/features/nodes/node-icon';
+import { NodeTypeBadge } from '@/components/features/nodes/node-type-badge';
+import { ProviderForm } from '@/components/features/providers/provider-form';
+import { cn } from '@/lib/utils';
 import type { Provider } from '@/types';
 
-export default function ProviderDetailPage() {
+interface ProviderDetailPageProps {
+  params: Promise<{ id: string }>;
+}
+
+const dateFmt = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+});
+
+export default function ProviderDetailPage({ params }: ProviderDetailPageProps) {
+  const { id } = use(params);
   const router = useRouter();
-  const params = useParams();
-  const { success, error: showError } = useToast();
-  
-  const provider = mockProviders.find((p) => p.id === params.id);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { success } = useToast();
+  const { nodes, getNode } = useNodes();
+
+  const [provider, setProvider] = useState<Provider | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [isSubmitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setProvider(mockProviders.find((p) => p.id === id) ?? null);
+  }, [id]);
+
+  const node = provider ? getNode(provider.nodeId) : null;
+  const branchPatients = useMemo(
+    () => (node ? mockPatients.filter((p) => p.nodeId === node.id) : []),
+    [node]
+  );
+
+  const nodeOptions = useMemo(
+    () =>
+      nodes
+        .filter((n) => n.type === 'location' || n.type === 'program')
+        .map((n) => ({ value: n.id, label: n.name })),
+    [nodes]
+  );
 
   if (!provider) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <h1 className="text-2xl font-bold">Provider not found</h1>
-        <Link href="/dashboard/providers">
-          <Button>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Providers
-          </Button>
-        </Link>
+      <div className="flex flex-col items-center justify-center min-h-[40vh]">
+        <EmptyState
+          icon="AlertCircle"
+          title="Provider not found"
+          description="The provider you're looking for doesn't exist or has been removed."
+          actionLabel="Back to Providers"
+          onAction={() => router.push('/dashboard/providers')}
+        />
       </div>
     );
   }
 
-  const handleUpdate = async (data: Omit<Provider, 'id' | 'createdAt' | 'updatedAt'>) => {
-    setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSubmitting(false);
-    setIsEditModalOpen(false);
-    success('Provider Updated', `${data.firstName} ${data.lastName} has been updated successfully.`);
+  const handleUpdate = async (
+    data: Omit<Provider, 'id' | 'createdAt' | 'updatedAt' | 'avatar'>
+  ) => {
+    setSubmitting(true);
+    await new Promise((r) => setTimeout(r, 500));
+    setProvider({
+      ...provider,
+      ...data,
+      updatedAt: new Date().toISOString(),
+    });
+    setSubmitting(false);
+    setEditOpen(false);
+    success('Provider updated', `${data.fullName}'s details saved.`);
   };
 
   const handleDelete = () => {
-    if (confirm('Are you sure you want to delete this provider?')) {
-      success('Provider Deleted', `${provider.firstName} ${provider.lastName} has been deleted.`);
-      router.push('/dashboard/providers');
+    if (typeof window !== 'undefined') {
+      const ok = window.confirm(
+        `Delete ${provider.fullName}? This cannot be undone.`
+      );
+      if (!ok) return;
     }
+    success('Provider deleted', `${provider.fullName} has been removed.`);
+    router.push('/dashboard/providers');
   };
 
-  const specialtyLabel = PROVIDER_SPECIALTY_OPTIONS.find(s => s.value === provider.specialty)?.label;
-  const statusLabel = PROVIDER_STATUS_OPTIONS.find(s => s.value === provider.status)?.label;
+  const fields: DetailField[] = [
+    { icon: Mail, value: provider.email, href: `mailto:${provider.email}` },
+    { icon: Phone, value: provider.phone },
+    {
+      icon: BadgeCheck,
+      label: 'License',
+      value: <span className="font-mono">{provider.licenseNumber}</span>,
+    },
+    {
+      icon: Briefcase,
+      label: 'Experience',
+      value:
+        provider.yearsExperience !== undefined
+          ? `${provider.yearsExperience} years`
+          : '—',
+    },
+    {
+      icon: Calendar,
+      label: 'Joined',
+      value: dateFmt.format(new Date(provider.createdAt)),
+      muted: true,
+    },
+    {
+      icon: Calendar,
+      label: 'Updated',
+      value: dateFmt.format(new Date(provider.updatedAt)),
+      muted: true,
+    },
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Link href="/dashboard/providers">
-          <Button variant="outline" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setIsEditModalOpen(true)}
-          >
-            <Edit2 className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={handleDelete}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete
-          </Button>
-        </div>
-      </div>
+      <NavigationBreadcrumb currentLabel={provider.fullName} />
 
-      <div className="grid gap-6">
-        {/* Header Card */}
-        <div className="rounded-xl border border-border bg-card p-8">
-          <div className="flex gap-6 items-start">
-            <div className="h-24 w-24 rounded-lg bg-primary/10 flex items-center justify-center">
-              <div className="text-4xl font-bold text-primary">
-                {provider.firstName[0]}{provider.lastName[0]}
-              </div>
-            </div>
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold mb-2">
-                {provider.firstName} {provider.lastName}
-              </h1>
-              <p className="text-lg text-muted-foreground mb-4">{specialtyLabel}</p>
-              <div className="flex flex-wrap gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Type</p>
-                  <p className="font-medium capitalize">
-                    {provider.providerType === 'individual' ? 'Individual Provider' : 'Organization'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Status</p>
-                  <p className="font-medium capitalize">{statusLabel}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">NPI Number</p>
-                  <p className="font-medium">{provider.npiNumber}</p>
-                </div>
-              </div>
-            </div>
+      <PageHeader
+        title={provider.fullName}
+        description={
+          provider.yearsExperience !== undefined
+            ? `${provider.specialty.charAt(0).toUpperCase() + provider.specialty.slice(1)} · ${provider.yearsExperience} years experience`
+            : `${provider.specialty.charAt(0).toUpperCase() + provider.specialty.slice(1)}`
+        }
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => router.back()}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <Button variant="outline" onClick={() => setEditOpen(true)}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
           </div>
-        </div>
+        }
+      />
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Contact Information */}
-          <div className="rounded-xl border border-border bg-card p-6">
-            <h2 className="text-lg font-bold mb-4">Contact Information</h2>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Email</p>
-                <p className="font-medium">{provider.email}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Phone</p>
-                <p className="font-medium">
-                  {provider.phone}
-                  {provider.phoneExtension && ` ext. ${provider.phoneExtension}`}
+      <DetailHeaderCard
+        icon={
+          <div className="h-14 w-14 rounded-2xl bg-violet-500/10 flex items-center justify-center text-violet-600 dark:text-violet-400">
+            <Stethoscope className="h-7 w-7" />
+          </div>
+        }
+        title={provider.fullName}
+        subtitle={
+          <span className="capitalize">
+            {provider.specialty} specialist
+          </span>
+        }
+        badges={<StatusBadge status={provider.status} />}
+        fields={fields}
+        notes={provider.notes || undefined}
+      />
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {node && (
+          <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
+            <h3 className="font-semibold text-foreground mb-4">Attached to</h3>
+            <button
+              onClick={() => router.push(`/dashboard/branches/${node.id}`)}
+              className="w-full flex items-center gap-3 rounded-lg p-3 -m-3 hover:bg-muted/50 transition-colors text-left"
+            >
+              <NodeIcon type={node.type} level={node.level} size="md" />
+              <div className="min-w-0">
+                <p className="font-medium text-foreground truncate">
+                  {node.name}
                 </p>
+                <NodeTypeBadge type={node.type} level={node.level} />
               </div>
-              {provider.fax && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Fax</p>
-                  <p className="font-medium">{provider.fax}</p>
-                </div>
-              )}
-            </div>
-          </div>
+            </button>
+          </section>
+        )}
 
-          {/* Address Information */}
-          <div className="rounded-xl border border-border bg-card p-6">
-            <h2 className="text-lg font-bold mb-4">Address</h2>
-            <div className="space-y-2 text-sm">
-              <p>{provider.address}</p>
-              {provider.address2 && <p>{provider.address2}</p>}
-              <p>
-                {provider.city}, {provider.state} {provider.zipCode}
-              </p>
-              <p>{provider.country}</p>
-            </div>
+        <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-foreground">
+              Patients at this branch
+            </h3>
+            <span className="text-xs text-muted-foreground">
+              {branchPatients.length}
+            </span>
           </div>
-
-          {/* Professional Information */}
-          {(provider.licenseNumber || provider.licenseExpiry) && (
-            <div className="rounded-xl border border-border bg-card p-6">
-              <h2 className="text-lg font-bold mb-4">Professional Information</h2>
-              <div className="space-y-4">
-                {provider.licenseNumber && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">License Number</p>
-                    <p className="font-medium">{provider.licenseNumber}</p>
+          {branchPatients.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">
+              No patients registered at this branch.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {branchPatients.slice(0, 6).map((p) => (
+                <li
+                  key={p.id}
+                  onClick={() => router.push(`/dashboard/patients/${p.id}`)}
+                  className={cn(
+                    'flex items-center gap-3 p-2 -mx-2 rounded-lg cursor-pointer',
+                    'hover:bg-muted/50 transition-colors'
+                  )}
+                >
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-xs font-medium text-primary">
+                      {p.fullName.charAt(0)}
+                    </span>
                   </div>
-                )}
-                {provider.licenseExpiry && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">License Expiry</p>
-                    <p className="font-medium">{provider.licenseExpiry}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {p.fullName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {p.age} yrs · {p.gender}
+                    </p>
                   </div>
-                )}
-              </div>
-            </div>
+                </li>
+              ))}
+            </ul>
           )}
-
-          {/* Additional Info */}
-          <div className="rounded-xl border border-border bg-card p-6">
-            <h2 className="text-lg font-bold mb-4">Additional Information</h2>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Primary Location</p>
-                <p className="font-medium">{provider.primaryLocation ? 'Yes' : 'No'}</p>
-              </div>
-              {provider.notes && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Notes</p>
-                  <p className="text-sm">{provider.notes}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        </section>
       </div>
 
       <Modal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        title="Edit Provider"
-        description="Update provider information"
+        isOpen={editOpen}
+        onClose={() => setEditOpen(false)}
+        title="Edit provider"
+        description={`Update ${provider.fullName}'s details.`}
+        size="lg"
       >
         <ProviderForm
           initialData={provider}
+          nodeOptions={nodeOptions}
           onSubmit={handleUpdate}
-          onCancel={() => setIsEditModalOpen(false)}
+          onCancel={() => setEditOpen(false)}
           isLoading={isSubmitting}
         />
       </Modal>

@@ -5,45 +5,11 @@
 export const APP_NAME = 'CareFlow';
 export const APP_DESCRIPTION = 'Patient Care Management System';
 
-// Status options (general)
+// Status options
 export const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
   { value: 'inactive', label: 'Inactive' },
   { value: 'pending', label: 'Pending' },
-];
-
-// Patient status options
-export const PATIENT_STATUS_OPTIONS = [
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
-  { value: 'hospitalized', label: 'Hospitalized' },
-  { value: 'jailed', label: 'Jailed' },
-  { value: 'loa', label: 'LOA' },
-  { value: 'pending', label: 'Pending' },
-];
-
-// Staff status options
-export const STAFF_STATUS_OPTIONS = [
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
-];
-
-// Marital status options
-export const MARITAL_STATUS_OPTIONS = [
-  { value: 'single', label: 'Single' },
-  { value: 'married', label: 'Married' },
-  { value: 'divorced', label: 'Divorced' },
-  { value: 'widowed', label: 'Widowed' },
-  { value: 'separated', label: 'Separated' },
-];
-
-// Facility type options
-export const FACILITY_TYPE_OPTIONS = [
-  { value: 'hospital', label: 'Hospital' },
-  { value: 'clinic', label: 'Clinic' },
-  { value: 'care_center', label: 'Care Center' },
-  { value: 'nursing_home', label: 'Nursing Home' },
-  { value: 'rehabilitation', label: 'Rehabilitation' },
 ];
 
 // Gender options
@@ -59,35 +25,121 @@ export const ROLE_OPTIONS = [
   { value: 'staff', label: 'Staff' },
 ];
 
-// Branch status options
-export const BRANCH_STATUS_OPTIONS = [
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
-  { value: 'suspended', label: 'Suspended' },
-  { value: 'pending', label: 'Pending' },
+// Marital status options
+export const MARITAL_STATUS_OPTIONS = [
+  { value: 'single', label: 'Single' },
+  { value: 'married', label: 'Married' },
+  { value: 'divorced', label: 'Divorced' },
+  { value: 'widowed', label: 'Widowed' },
+  { value: 'other', label: 'Other' },
 ];
 
-// Branch type options
-export const BRANCH_TYPE_OPTIONS = [
-  { value: 'primary_branch', label: 'Primary Branch' },
-  { value: 'secondary_branch', label: 'Secondary Branch' },
-  { value: 'clinic', label: 'Clinic' },
-  { value: 'satellite_center', label: 'Satellite Center' },
+// Healthcare provider specialties
+export const SPECIALTY_OPTIONS = [
+  { value: 'general', label: 'General Practice' },
+  { value: 'cardiology', label: 'Cardiology' },
+  { value: 'pediatrics', label: 'Pediatrics' },
+  { value: 'neurology', label: 'Neurology' },
+  { value: 'orthopedics', label: 'Orthopedics' },
+  { value: 'oncology', label: 'Oncology' },
+  { value: 'psychiatry', label: 'Psychiatry' },
+  { value: 'dermatology', label: 'Dermatology' },
 ];
 
-// US Timezones
-export const US_TIMEZONE_OPTIONS = [
-  { value: 'America/New_York', label: 'Eastern Time (ET)' },
-  { value: 'America/Chicago', label: 'Central Time (CT)' },
-  { value: 'America/Denver', label: 'Mountain Time (MT)' },
-  { value: 'America/Phoenix', label: 'Arizona Time (AZ)' },
-  { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
-  { value: 'America/Anchorage', label: 'Alaska Time (AKT)' },
-  { value: 'Pacific/Honolulu', label: 'Hawaii Time (HT)' },
+// Filter helpers — prepend an "All" option to a base option list.
+export function withAllOption(
+  options: { value: string; label: string }[],
+  allLabel = 'All'
+) {
+  return [{ value: '', label: allLabel }, ...options];
+}
+
+// ==========================================
+// GEO — countries / states / cities
+// ==========================================
+// Light cascading dataset just for form pickers. Real apps would source this
+// from an API or ISO 3166 dataset.
+
+export const COUNTRY_OPTIONS = [
+  { value: 'US', label: 'United States' },
+  { value: 'CA', label: 'Canada' },
+  { value: 'UK', label: 'United Kingdom' },
 ];
 
-// Timezone options (alias for compatibility)
-export const TIMEZONE_OPTIONS = US_TIMEZONE_OPTIONS;
+export const STATES_BY_COUNTRY: Record<
+  string,
+  { value: string; label: string }[]
+> = {
+  US: [
+    { value: 'CA', label: 'California' },
+    { value: 'TX', label: 'Texas' },
+    { value: 'NY', label: 'New York' },
+    { value: 'FL', label: 'Florida' },
+    { value: 'WA', label: 'Washington' },
+  ],
+  CA: [
+    { value: 'ON', label: 'Ontario' },
+    { value: 'QC', label: 'Quebec' },
+    { value: 'BC', label: 'British Columbia' },
+  ],
+  UK: [
+    { value: 'ENG', label: 'England' },
+    { value: 'SCT', label: 'Scotland' },
+    { value: 'WLS', label: 'Wales' },
+  ],
+};
+
+export const CITIES_BY_STATE: Record<
+  string,
+  { value: string; label: string }[]
+> = {
+  CA: [
+    { value: 'los_angeles', label: 'Los Angeles' },
+    { value: 'san_francisco', label: 'San Francisco' },
+    { value: 'san_diego', label: 'San Diego' },
+    { value: 'sacramento', label: 'Sacramento' },
+  ],
+  TX: [
+    { value: 'houston', label: 'Houston' },
+    { value: 'dallas', label: 'Dallas' },
+    { value: 'austin', label: 'Austin' },
+  ],
+  NY: [
+    { value: 'new_york', label: 'New York' },
+    { value: 'brooklyn', label: 'Brooklyn' },
+    { value: 'buffalo', label: 'Buffalo' },
+  ],
+  FL: [
+    { value: 'miami', label: 'Miami' },
+    { value: 'orlando', label: 'Orlando' },
+    { value: 'tampa', label: 'Tampa' },
+  ],
+  WA: [
+    { value: 'seattle', label: 'Seattle' },
+    { value: 'spokane', label: 'Spokane' },
+  ],
+  ON: [
+    { value: 'toronto', label: 'Toronto' },
+    { value: 'ottawa', label: 'Ottawa' },
+  ],
+  QC: [
+    { value: 'montreal', label: 'Montreal' },
+    { value: 'quebec_city', label: 'Quebec City' },
+  ],
+  BC: [{ value: 'vancouver', label: 'Vancouver' }],
+  ENG: [
+    { value: 'london', label: 'London' },
+    { value: 'manchester', label: 'Manchester' },
+  ],
+  SCT: [{ value: 'edinburgh', label: 'Edinburgh' }],
+  WLS: [{ value: 'cardiff', label: 'Cardiff' }],
+};
+
+// Provider type options
+export const PROVIDER_TYPE_OPTIONS = [
+  { value: 'individual', label: 'Individual Provider' },
+  { value: 'organization', label: 'Organization' },
+];
 
 // Pagination defaults
 export const DEFAULT_PAGE_SIZE = 10;
@@ -98,9 +150,6 @@ export const STATUS_COLORS = {
   active: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
   inactive: 'bg-red-500/10 text-red-500 border-red-500/20',
   pending: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
-  hospitalized: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  jailed: 'bg-slate-500/10 text-slate-500 border-slate-500/20',
-  loa: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
 } as const;
 
 // Animation durations
@@ -118,27 +167,3 @@ export const BREAKPOINTS = {
   xl: 1280,
   '2xl': 1536,
 };
-
-// Provider type options
-export const PROVIDER_TYPE_OPTIONS = [
-  { value: 'individual', label: 'Individual Provider' },
-  { value: 'organization', label: 'Organization' },
-];
-
-// Provider specialty options
-export const PROVIDER_SPECIALTY_OPTIONS = [
-  { value: 'general_practice', label: 'General Practice' },
-  { value: 'cardiology', label: 'Cardiology' },
-  { value: 'pediatrics', label: 'Pediatrics' },
-  { value: 'orthopedics', label: 'Orthopedics' },
-  { value: 'psychiatry', label: 'Psychiatry' },
-  { value: 'surgery', label: 'Surgery' },
-  { value: 'other', label: 'Other' },
-];
-
-// Provider status options
-export const PROVIDER_STATUS_OPTIONS = [
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
-  { value: 'pending', label: 'Pending' },
-];

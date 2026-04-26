@@ -2,137 +2,244 @@
 // GLOBAL TYPE DEFINITIONS
 // ==========================================
 
-// Status types
 export type Status = 'active' | 'inactive' | 'pending';
-export type PatientStatus = 'active' | 'inactive' | 'hospitalized' | 'jailed' | 'loa' | 'pending';
-export type StaffStatus = 'active' | 'inactive';
 export type UserRole = 'admin' | 'staff';
 export type Gender = 'male' | 'female' | 'other';
-export type MaritalStatus = 'single' | 'married' | 'divorced' | 'widowed' | 'separated';
-export type FacilityType = 'hospital' | 'clinic' | 'care_center' | 'nursing_home' | 'rehabilitation';
 
-// Base entity interface
 export interface BaseEntity {
   id: string;
   createdAt: string;
   updatedAt: string;
 }
 
-// Structure type
-export interface Structure extends BaseEntity {
-  title: string;
-  code: string;
-  type: FacilityType;
-  license: string;
-  licenseExpiry: string;
-  
-  // Address fields
-  address: string;
-  address2?: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  county: string;
-  country: string;
-  
-  // Contact fields
-  phone: string;
-  phoneExtension?: string;
-  fax?: string;
-  email: string;
-  website?: string;
-  
-  // Additional
-  timezone: string;
-  notes: string;
+// ==========================================
+// HIERARCHICAL NODE MODEL
+// ==========================================
+// root -> department(s) -> department(s) -> location | program
+// - root      : organization root, holds all sub-nodes (created on first login)
+// - department: virtual container, can hold sub-departments / locations / programs
+// - location  : physical branch (leaf)
+// - program   : staff-on-the-go group / outreach (leaf, no physical address required)
+
+export type NodeType = 'root' | 'department' | 'location' | 'program';
+
+export interface BaseNode extends BaseEntity {
+  type: NodeType;
+  parentId: string | null;
+  name: string;
+  description?: string;
   status: Status;
-  branchCount: number;
+  // Materialized path of ancestor ids (root first) for fast scoping/queries.
+  path: string[];
+  level: number;
 }
 
-// Branch type
-export interface Branch extends BaseEntity {
-  structureId: string;
-  title: string;
-  code: string;
-  type: FacilityType;
-  license: string;
-  licenseExpiry: string;
-  
-  // Address fields
-  address: string;
-  address2?: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  county: string;
-  country: string;
-  
-  // Contact fields
-  phone: string;
-  phoneExtension?: string;
-  fax?: string;
-  email: string;
-  website?: string;
-  
-  // Additional
-  timezone: string;
+export interface RootNode extends BaseNode {
+  type: 'root';
+  parentId: null;
+  organizationName: string;
+}
+
+export interface DepartmentNode extends BaseNode {
+  type: 'department';
+  code?: string;
   notes?: string;
-  status: Status;
-  patientCount: number;
-  userCount: number;
 }
 
-// Patient type
+export interface LocationNode extends BaseNode {
+  type: 'location';
+  address: string;
+  city: string;
+  contactNumber: string;
+  email: string;
+}
+
+export interface ProgramNode extends BaseNode {
+  type: 'program';
+  schedule?: string;
+  area?: string;
+  contactNumber?: string;
+}
+
+export type Node = RootNode | DepartmentNode | LocationNode | ProgramNode;
+
+export type LeafNodeType = 'location' | 'program';
+export type ContainerNodeType = 'root' | 'department';
+
+// Tree shape used by the sidebar / breadcrumbs.
+export interface NodeTreeItem {
+  node: Node;
+  children: NodeTreeItem[];
+}
+
+// ==========================================
+// PEOPLE
+// ==========================================
+
+export type MaritalStatus =
+  | 'single'
+  | 'married'
+  | 'divorced'
+  | 'widowed'
+  | 'other';
+
 export interface Patient extends BaseEntity {
-  // Name split into parts
-  firstName: string;
+  nodeId: string; // the leaf node (location/program) the patient is assigned to
+  /** Canonical display name. Built from first + middle + last on creation. */
+  fullName: string;
+  // Name parts — optional so existing mock patients (which only have
+  // `fullName`) keep working without backfilling.
+  firstName?: string;
   middleName?: string;
-  lastName: string;
-  
-  // Personal info
-  email: string;
-  maritalStatus: MaritalStatus;
-  admissionDate: string;
+  lastName?: string;
   age: number;
   gender: Gender;
   contactNumber: string;
+  /** Optional secondary number, e.g. emergency contact. */
+  alternatePhone?: string;
+  email?: string;
+  address: string;
+  maritalStatus?: MaritalStatus;
+  /** ISO date string (YYYY-MM-DD). */
+  admissionDate?: string;
   medicalNotes: string;
-  status: PatientStatus;
-  
-  // Multi-branch support
-  mainBranchId: string;
-  branchIds: string[];
-  assignedStaffIds: string[];
+  status: Status;
 }
 
-// User type
 export interface User extends BaseEntity {
-  // Name split into parts
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  
-  // Personal info
-  maritalStatus: MaritalStatus;
-  admissionDate: string;
-  age: number;
-  gender: Gender;
-  contactNumber: string;
-  
-  // Account info
+  nodeId: string; // any node from which the user inherits scope (incl. departments)
+  fullName: string;
   email: string;
-  password?: string;
+  phone: string;
   role: UserRole;
-  status: StaffStatus;
+  status: Status;
   notes: string;
   avatar?: string;
-  
-  // Branch association
-  branchId: string;
-  assignedPatientIds: string[];
 }
 
-// Agency type
+// Healthcare providers (clinical practitioners). Distinct from administrative
+// staff (Users) — providers have license, specialty, and tenure attributes.
+export type ProviderSpecialty =
+  | 'general'
+  | 'cardiology'
+  | 'pediatrics'
+  | 'neurology'
+  | 'orthopedics'
+  | 'oncology'
+  | 'psychiatry'
+  | 'dermatology';
+
+export type ProviderType = 'individual' | 'organization';
+
+export interface Provider extends BaseEntity {
+  nodeId: string;
+  /** Display name. For individuals: full name; for organizations: org name. */
+  fullName: string;
+  email: string;
+  phone: string;
+  specialty: ProviderSpecialty;
+  /** Existing license id — optional now, NPI is the new required identifier. */
+  licenseNumber: string;
+  status: Status;
+  notes: string;
+  avatar?: string;
+
+  // ── New fields (all optional so existing mock data keeps type-checking) ──
+  providerType?: ProviderType;
+  /** For Individual providers. */
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
+  gender?: Gender;
+  /** For Organization providers. */
+  organizationName?: string;
+
+  yearsExperience?: number;
+  /** US National Provider Identifier (10 digits). */
+  npiNumber?: string;
+  /** ISO date string for license expiry (YYYY-MM-DD). */
+  licenseExpiry?: string;
+
+  /** Phone extension. */
+  extension?: string;
+  fax?: string;
+
+  /** Address line 1 — street + number. */
+  addressLine1?: string;
+  /** Address line 2 — suite / unit. */
+  addressLine2?: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  zipCode?: string;
+  /** Marks this address as the provider's primary location. */
+  isPrimaryLocation?: boolean;
+}
+
+// ==========================================
+// MEDICATION ADMINISTRATION
+// ==========================================
+// A medication is a scheduled dose for a patient. Some medications carry
+// pre-requisite vital checks that must fall within a normal range BEFORE the
+// dose can be administered.
+
+export type PrerequisiteType = 'bp' | 'glucose' | 'temperature' | 'pulse';
+
+interface BasePrerequisite {
+  type: PrerequisiteType;
+  label: string;
+  /** Human-readable instruction, e.g. "Check BP before dosing." */
+  instruction?: string;
+}
+
+/** Blood pressure has two readings — systolic and diastolic. */
+export interface BloodPressurePrerequisite extends BasePrerequisite {
+  type: 'bp';
+  systolic: { min: number; max: number }; // mmHg
+  diastolic: { min: number; max: number }; // mmHg
+}
+
+/** Single-value vital (glucose mg/dL, temperature °F, pulse bpm). */
+export interface VitalPrerequisite extends BasePrerequisite {
+  type: 'glucose' | 'temperature' | 'pulse';
+  unit: string;
+  range: { min: number; max: number };
+}
+
+export type MedicationPrerequisite =
+  | BloodPressurePrerequisite
+  | VitalPrerequisite;
+
+export type MedicationStatus = 'pending' | 'administered' | 'skipped';
+
+/** A single vital reading captured at administration time. */
+export interface VitalReading {
+  type: PrerequisiteType;
+  /** For BP: stored as `${systolic}/${diastolic}`. For others: a number. */
+  value: string;
+  recordedAt: string;
+}
+
+export interface Medication extends BaseEntity {
+  patientId: string;
+  name: string;
+  dosage: string;
+  /** 24-hour scheduled time, e.g. "08:00". */
+  scheduledTime: string;
+  prerequisites: MedicationPrerequisite[];
+  notes?: string;
+}
+
+/** Runtime record of an administration. Lives in component state for the
+ *  mock app — would be persisted server-side in production. */
+export interface AdministrationRecord {
+  medicationId: string;
+  status: MedicationStatus;
+  administeredAt?: string;
+  administeredBy?: string;
+  readings: VitalReading[];
+}
+
 export interface Agency extends BaseEntity {
   name: string;
   email: string;
@@ -141,47 +248,10 @@ export interface Agency extends BaseEntity {
   logo?: string;
 }
 
-// Provider type (Doctor)
-export type ProviderType = 'individual' | 'organization';
-export type ProviderSpecialty = 'general_practice' | 'cardiology' | 'pediatrics' | 'orthopedics' | 'psychiatry' | 'surgery' | 'other';
+// ==========================================
+// UI HELPERS
+// ==========================================
 
-export interface Provider extends BaseEntity {
-  // Basic info
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  providerType: ProviderType;
-  
-  // Professional info
-  npiNumber: string;
-  specialty: ProviderSpecialty;
-  licenseNumber?: string;
-  licenseExpiry?: string;
-  
-  // Personal info
-  gender: Gender;
-  
-  // Contact fields
-  phone: string;
-  phoneExtension?: string;
-  fax?: string;
-  email: string;
-  
-  // Address fields
-  address: string;
-  address2?: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  country: string;
-  
-  // Additional
-  primaryLocation: boolean;
-  status: Status;
-  notes?: string;
-}
-
-// Table column configuration
 export interface TableColumn<T> {
   key: keyof T | string;
   header: string;
@@ -190,7 +260,6 @@ export interface TableColumn<T> {
   className?: string;
 }
 
-// Sidebar menu item
 export interface SidebarMenuItem {
   id: string;
   label: string;
@@ -199,11 +268,10 @@ export interface SidebarMenuItem {
   badge?: number;
 }
 
-// Form field configuration
 export interface FormField {
   name: string;
   label: string;
-  type: 'text' | 'email' | 'tel' | 'number' | 'textarea' | 'select' | 'radio' | 'date' | 'password';
+  type: 'text' | 'email' | 'tel' | 'number' | 'textarea' | 'select' | 'radio';
   placeholder?: string;
   required?: boolean;
   options?: { value: string; label: string }[];
@@ -215,7 +283,6 @@ export interface FormField {
   };
 }
 
-// Toast notification
 export interface ToastNotification {
   id: string;
   type: 'success' | 'error' | 'warning' | 'info';
@@ -224,7 +291,6 @@ export interface ToastNotification {
   duration?: number;
 }
 
-// Statistics card
 export interface StatCard {
   id: string;
   title: string;
@@ -234,24 +300,10 @@ export interface StatCard {
   icon: string;
 }
 
-// Theme type
 export type Theme = 'light' | 'dark' | 'system';
 
-// Pagination
 export interface PaginationState {
   page: number;
   pageSize: number;
   total: number;
-}
-
-// Filter state
-export interface FilterState {
-  search: string;
-  status?: string;
-  type?: string;
-  branchId?: string;
-  structureId?: string;
-  role?: string;
-  dateFrom?: string;
-  dateTo?: string;
 }
