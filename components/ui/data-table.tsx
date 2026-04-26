@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableSkeleton } from '@/components/ui/skeleton-loader';
 
-interface DataTableProps<T extends Record<string, unknown>> {
+interface DataTableProps<T extends object> {
   columns: TableColumn<T>[];
   data: T[];
   keyField: keyof T;
@@ -25,7 +25,7 @@ interface DataTableProps<T extends Record<string, unknown>> {
 
 type SortDirection = 'asc' | 'desc' | null;
 
-export function DataTable<T extends Record<string, unknown>>({
+export function DataTable<T extends object>({
   columns,
   data,
   keyField,
